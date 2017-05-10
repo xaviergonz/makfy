@@ -1,10 +1,11 @@
 import * as path from 'path';
-import * as colors from 'colors/safe';
+import * as chalk from 'chalk';
 import * as child_process from 'child_process';
 import { resetColors, getTimeString } from './utils';
 import { ExecError, MakfyError } from './errors';
 import { Options } from './options';
 import { Command } from './commandParser';
+const prettyHrTime = require('pretty-hrtime');
 
 const pathEnvName = process.platform === 'win32' ? 'Path' : 'path';
 
@@ -55,7 +56,7 @@ export class Makfy {
   }
 
   private _execHelpString = (command: string) => {
-    console.log('\n' + getTimeString() + colors.bgCyan(colors.bold(colors.white(`${command.substr(1).trim()}`))));
+    console.log('\n' + getTimeString() + chalk.bgCyan.bold.white(`${command.substr(1).trim()}`));
   }
 
   private _execCommandString = (command: string) => {
@@ -64,7 +65,7 @@ export class Makfy {
       [pathEnvName]: `${path.resolve(path.join('node_modules/.bin'))}${path.delimiter}${process.env[pathEnvName] || ''}`
     });
 
-    const startTime = Date.now();
+    const startTime = process.hrtime();
 
     let silentLevel = 0;
     if (command.startsWith('%%')) {
@@ -77,13 +78,13 @@ export class Makfy {
     }
 
     if (silentLevel <= 1) {
-      console.log(getTimeString() + colors.blue(`> ${command}`));
+      console.log(getTimeString() + chalk.blue(`> ${command}`));
     }
 
     const printProfileTime = () => {
       if (this.options.profiling && silentLevel < 2) {
-        const time = Date.now() - startTime;
-        process.stdout.write(getTimeString() + colors.cyan(`finished in ${time} ms`) + colors.blue(` > ${command}\n`));
+        const endTime = process.hrtime(startTime);
+        process.stdout.write(getTimeString() + chalk.cyan(`finished in ${prettyHrTime(endTime)}`) + chalk.blue(` > ${command}\n`));
       }
     };
 
@@ -101,7 +102,7 @@ export class Makfy {
 
       const err1 = `Failed with code ${code}`;
       const err2 = `> ${command}`;
-      process.stderr.write(getTimeString() + colors.bgRed(colors.bold(colors.white(err1))) + colors.blue(` ${err2}\n`));
+      process.stderr.write(getTimeString() + chalk.bgRed.bold.white(err1) + chalk.blue(` ${err2}\n`));
       throw new ExecError(`${err1} ${err2}`);
     }
   }

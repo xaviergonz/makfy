@@ -1,7 +1,7 @@
-import * as colors from 'colors/safe';
+import * as chalk from 'chalk';
 
 export const resetColors = () => {
-  const reset = colors.reset('');
+  const reset = chalk.reset('');
   process.stdout.write(reset);
   process.stderr.write(reset);
 };
@@ -34,5 +34,5 @@ export const isAlphanumericStringArray = (arr: any) => {
 };
 
 export const getTimeString = () => {
-  return colors.gray(`[${new Date(new Date().getTime()).toLocaleTimeString()}] `);
+  return chalk.gray(`[${new Date(new Date().getTime()).toLocaleTimeString()}] `);
 };

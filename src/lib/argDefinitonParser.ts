@@ -2,7 +2,7 @@ import { MakfyError } from './errors';
 import { isAlphanumericString, isAlphanumericStringArray } from './utils';
 import { validateValues, Schema } from './validation';
 
-export const reservedArgs = ['f', 'file', 'l', 'list', 'h', 'help', 'v', 'version'];
+export const reservedArgs = ['f', 'file', 'l', 'list', 'h', 'help', 'v', 'version', 'color', 'no-color'];
 
 /*
  { kind: 'flag' or 'f' } - an optional flag, false by default

@@ -2,9 +2,14 @@
   "name": "makfy",
   "version": "0.0.1",
   "description": "makfy - npm scripts on steroids!",
-  "main": "index.js",
+  "main": "dist/lib/index.js",
+  "bin": {
+    "makfy": "dist/bin/cli.js"
+  },
   "private": true,
-  "scripts": {},
+  "scripts": {
+    "build": "tsc -p ."
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/xaviergonz/makfy.git"
@@ -24,12 +29,15 @@
   },
   "homepage": "https://github.com/xaviergonz/makfy#readme",
   "devDependencies": {
-    "@types/colors": "^1.1.3",
+    "@types/chalk": "^0.4.31",
     "@types/node": "^7.0.18",
+    "@types/yargs": "^6.6.0",
     "tslint": "^5.2.0",
     "typescript": "^2.3.2"
   },
   "dependencies": {
-    "colors": "^1.1.2"
+    "chalk": "^1.1.3",
+    "pretty-hrtime": "^1.0.3",
+    "yargs": "^8.0.1"
   }
 }

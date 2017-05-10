@@ -1,10 +1,10 @@
-import * as colors from 'colors/safe';
-
+import * as chalk from 'chalk';
 import { resetColors, isObject, getTimeString } from './utils';
 import { parseCommands, Commands } from './commandParser';
 import { parseOptions, Options } from './options';
 import { MakfyError } from './errors';
 import { Makfy } from './Makfy';
+const prettyHrTime = require('pretty-hrtime');
 
 class Writer {
   output: string = '';
@@ -36,7 +36,7 @@ export const runCommand = (commands: Commands, commandName: string, commandArgs:
   Object.keys(commandArgs).forEach((key) => {
     const argDef = argDefs[key];
     if (!argDef) {
-      console.error(colors.magenta(`[WARN] Argument '${key}' is not defined as a valid argument for this command and will be ignored`));
+      console.error(chalk.magenta(`[WARN] Argument '${key}' is not defined as a valid argument for this command and will be ignored`));
     }
   });
 
@@ -48,13 +48,14 @@ export const runCommand = (commands: Commands, commandName: string, commandArgs:
   });
 
   // run
-  const startTime = Date.now();
-  console.log(colors.bgBlue(colors.bold(colors.white(`Running command '${commandName}'...`))));
+  const startTime = process.hrtime();
+  console.log(chalk.bgBlue.bold.white(`Running command '${commandName}'...`));
 
   const mf = new Makfy(fullOptions, finalCommandArgs);
   commands[commandName].run(mf.exec, finalCommandArgs);
 
-  console.log('\n' + getTimeString() + colors.bgGreen.bold.white(`'${commandName}' done in ${Date.now() - startTime} msecs!`));
+  const endTime = process.hrtime(startTime);
+  console.log('\n' + getTimeString() + chalk.bgGreen.bold.white(`'${commandName}' done in ${prettyHrTime(endTime)}!`));
   resetColors();
 };
 

@@ -1,9 +1,9 @@
 {
+  "include": [
+    "src/**/*"
+  ],
   "compilerOptions": {
-    "include": [
-      "src/**/*"
-    ],
-    "outDir": "./lib",
+    "outDir": "./dist",
 
     "declaration": true,
     "sourceMap": false,

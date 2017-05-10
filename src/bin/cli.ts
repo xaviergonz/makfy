@@ -1,26 +1,29 @@
+#! /usr/bin/env node
+
 import * as path from 'path';
 import * as fs from 'fs';
-import * as colors from 'colors/safe';
+import * as chalk from 'chalk';
 
-import { resetColors } from './utils';
-import { MakfyError, ExecError } from './errors';
-import { runCommand, listAllCommands, listCommand } from './index';
-import { isObject } from './utils';
-import { reservedArgs } from './argDefinitonParser';
+import { resetColors } from '../lib/utils';
+import { MakfyError, ExecError } from '../lib/errors';
+import { runCommand, listAllCommands, listCommand } from '../lib/';
+import { isObject } from '../lib/utils';
+import { reservedArgs } from '../lib/argDefinitonParser';
+import * as yargs from 'yargs';
 
 const programName = 'makfy';
-const argv = require('yargs').argv;
+const argv = yargs.argv;
 
-const errCodes = {
-  cliError: -3,
-  userFileError: -2,
-  execError: -1
-};
+const enum ErrCode {
+  CliError = -3,
+  UserFileError = -2,
+  ExecError = -1
+}
 
-const exitWithError = (code: number, message?: string) => {
+const exitWithError = (code: ErrCode, message?: string) => {
   resetColors();
   if (message) {
-    console.error(colors.red('[ERROR] ' + message));
+    console.error(chalk.red('[ERROR] ' + message));
   }
   process.exit(code);
 };
@@ -45,10 +48,10 @@ const loadFile = () => {
     filename = argv.f;
   }
   if (!fs.existsSync(filename)) {
-    exitWithError(errCodes.cliError, `Command file '${filename}' not found`);
+    exitWithError(ErrCode.CliError, `Command file '${filename}' not found`);
   }
 
-  console.log(colors.gray(`Using command file '${filename}'...`));
+  console.log(chalk.gray(`Using command file '${filename}'...`));
 
   // try to load the user file
   const absoluteFilename = path.resolve(filename);
@@ -56,20 +59,20 @@ const loadFile = () => {
     const fileExports = require(absoluteFilename);
 
     if (!isObject(fileExports)) {
-      exitWithError(errCodes.userFileError, `module.exports inside '${filename}' is not an object`);
+      exitWithError(ErrCode.UserFileError, `module.exports inside '${filename}' is not an object`);
     }
 
     return fileExports;
   }
   catch (err) {
-    exitWithError(errCodes.userFileError, `Error requiring ${filename}:\n${err.message}`);
+    exitWithError(ErrCode.UserFileError, `Error requiring ${filename}:\n${err.message}`);
   }
 };
 
 const main = () => {
   if (argv.help || argv.h) {
     printProgramHelp();
-    exitWithError(errCodes.cliError);
+    exitWithError(ErrCode.CliError);
     return;
   }
 
@@ -82,18 +85,18 @@ const main = () => {
     const commandName = argv._.length > 0 ? argv._[0].trim() : undefined;
     if (commandName) {
       if (argv._.length > 1) {
-        exitWithError(errCodes.cliError, `Specify only one command to list or don't specify any commands to list them all`);
+        exitWithError(ErrCode.CliError, `Specify only one command to list or don't specify any commands to list them all`);
         return;
       }
 
       execute = () => {
-        const output = colors.gray(`Listing '${commandName}' command...\n\n`) + listCommand(fileExports.commands, commandName, true);
+        const output = chalk.gray(`Listing '${commandName}' command...\n\n`) + listCommand(fileExports.commands, commandName, true);
         console.log(output);
       };
     }
     else {
       execute = () => {
-        const output = colors.gray('Listing all commands...\n\n') + listAllCommands(fileExports.commands, true);
+        const output = chalk.gray('Listing all commands...\n\n') + listAllCommands(fileExports.commands, true);
         console.log(output);
       };
     }
@@ -102,12 +105,12 @@ const main = () => {
     // run
     if (argv._.length <= 0) {
       printProgramHelp();
-      exitWithError(errCodes.cliError);
+      exitWithError(ErrCode.CliError);
       return;
     }
 
     if (argv._.length > 1) {
-      exitWithError(errCodes.cliError, 'Only one command can be run at once');
+      exitWithError(ErrCode.CliError, 'Only one command can be run at once');
       return;
     }
 
@@ -134,11 +137,11 @@ const main = () => {
   catch (err) {
     resetColors();
     if (err instanceof MakfyError) {
-      exitWithError(errCodes.userFileError, err.message);
+      exitWithError(ErrCode.UserFileError, err.message);
     }
     else if (err instanceof ExecError) {
       // the message should be printed already
-      exitWithError(errCodes.execError);
+      exitWithError(ErrCode.ExecError);
     }
     else {
       throw err;
