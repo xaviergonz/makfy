@@ -1,15 +1,6 @@
 import { MakfyError } from './errors';
-import { isAlphanumericString, isAlphanumericStringArray } from './utils';
-import { validateValues, Schema } from './validation';
-
-export const reservedArgs = [
-  'f', 'file',
-  'l', 'list',
-  'h', 'help',
-  'v', 'version',
-  'color', 'no-color',
-  'profile'
-];
+import { isAlphanumericStringArray, errorMessageForObject } from './utils';
+import { argSchema, validateInstance } from './schema';
 
 /*
  { kind: 'flag' or 'f' } - an optional flag, false by default
@@ -40,19 +31,6 @@ export interface ChoiceArgDefinition {
 
 export type ArgDefinition = FlagArgDefinition | StringArgDefinition | ChoiceArgDefinition;
 
-// valid arg definitions
-const argDefinitionSchema: Schema = {
-  kind: {
-    type: 'any'
-  },
-  byDefault: {
-    type: 'any'
-  },
-  desc: {
-    type: 'string'
-  }
-};
-
 const enum Kind {
   Flag,
   String,
@@ -72,71 +50,58 @@ const normalizeKind = (kind: any) => {
   return undefined;
 };
 
-export const parseArgDefinition = (cmdName: string, argName: string, argDefinition: ArgDefinition) => {
-  const error = (err: string) => {
-    throw new MakfyError(`Command '${cmdName}' - Argument '${argName}' - Definition error: ${err}`);
+export type ParseArgFunction = (value: any) => any;
+
+export interface ParsedArgDefinition {
+  help: string;
+  parse: ParseArgFunction;
+}
+
+export const parseArgDefinition = (cmdName: string, argName: string, argDefinition: ArgDefinition, skipValidation: boolean): ParsedArgDefinition => {
+  const error = (property: string | undefined, message: string): MakfyError => {
+    return new MakfyError(errorMessageForObject(['commands', cmdName, 'args', argName, property], message));
   };
 
-  if (reservedArgs.includes(argName)) {
-    error(`name is reserved and cannot be reused`);
-  }
-
-  if (!isAlphanumericString(argName)) {
-    error('name must be alphanumeric');
-  }
-
-  const validationResult = validateValues(argDefinitionSchema, argDefinition, false, false);
-  if (validationResult) {
-    error(validationResult);
+  if (!skipValidation) {
+    const validationResult = validateInstance(argDefinition, argSchema);
+    if (!validationResult.valid) {
+      throw error(undefined, validationResult.toString());
+    }
   }
 
   const normalizedKind = normalizeKind(argDefinition.kind);
 
-  const validateError = (err: string): never => {
-    throw new MakfyError(`Argument '${argName}' - ${err}`);
+  const validateError = (err: string): MakfyError => {
+    return new MakfyError(`Argument '${argName}' - ${err}`);
   };
 
-  const validateRequired = (value: any) => {
-    if (value === undefined) {
-      validateError('argument is required');
-    }
-  };
-
-  let parse;
+  let parse: ParseArgFunction;
+  const argRequiredMessage = 'argument is required';
 
   if (normalizedKind === Kind.Flag) {
     let {byDefault, kind} = argDefinition as FlagArgDefinition;
-
-    if (byDefault !== undefined) {
-      error('flag arguments cannot have default values, they are false by default');
-    }
     byDefault = false;
 
     parse = (value: any) => {
       if (value === undefined) value = byDefault;
-      validateRequired(value);
+      if (value === undefined) throw validateError(argRequiredMessage);
       if (typeof value === 'boolean') return value;
       if (value === 'true') return true;
       if (value === 'false') return false;
-      validateError(`a flag argument cannot have a value`);
-      // will never get here
-      return undefined;
+      throw validateError(`a flag argument cannot have a value`);
     };
   }
   else if (normalizedKind === Kind.String) {
     const {byDefault, kind} = argDefinition as StringArgDefinition;
 
-    if (byDefault !== undefined && typeof byDefault !== 'string') {
-      error(`'byDefault' must be a string or undefined`);
-    }
-
     parse = (value: any) => {
-      validateRequired(value);
+      if (value === undefined) value = byDefault;
+      if (value === undefined) throw validateError(argRequiredMessage);
       if (typeof value === 'number') {
         value = String(value);
       }
       if (typeof value !== 'string') {
-        validateError('argument must be a string');
+        throw validateError('argument must be a string');
       }
       return value;
     };
@@ -144,26 +109,20 @@ export const parseArgDefinition = (cmdName: string, argName: string, argDefiniti
   else if (normalizedKind === Kind.Choice) {
     const {byDefault, kind} = argDefinition as ChoiceArgDefinition;
 
-    if (kind.length < 1) {
-      error('a choice argument must have at least one string');
-    }
-    if (byDefault !== undefined && !kind.includes(byDefault)) {
-      error(`'byDefault' must be one of (${kind.join(' | ')})`);
-    }
-
     parse = (value: any) => {
-      validateRequired(value);
+      if (value === undefined) value = byDefault;
+      if (value === undefined) throw validateError(argRequiredMessage);
       if (typeof value === 'number') {
         value = String(value);
       }
       if (typeof value !== 'string' || !kind.includes(value)) {
-        validateError(`argument must be one of: ${kind.join(', ')}`);
+        throw validateError(`argument must be one of: ${kind.join(', ')}`);
       }
       return value;
     };
   }
   else {
-    error(`unknown kind property value, it must be either 'flag', 'string' or a string array (choice)`);
+    throw new Error('internal error - validation failed?');
   }
 
   return {
@@ -208,6 +167,6 @@ const getHelpForArg = (argName: string, argDefinition: ArgDefinition) => {
       const { kind } = argDefinition as ChoiceArgDefinition;
       return getHelpString(kind.join('|'), byDefault);
     default:
-      throw new Error(`Internal error - Unknown kind: ${normalizedKind}`);
+      throw new Error(`internal error - unknown kind: ${normalizedKind}`);
   }
 };

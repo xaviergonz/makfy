@@ -4,14 +4,15 @@ import * as child_process from 'child_process';
 import { resetColors, getTimeString } from './utils';
 import { ExecError, MakfyError } from './errors';
 import { Options } from './options';
-import { Command } from './commandParser';
+import { Command } from './command';
 const prettyHrTime = require('pretty-hrtime');
 
 const pathEnvName = process.platform === 'win32' ? 'Path' : 'path';
 
 export type ExecCommand = string | (() => any) | Command;
+export type ExecFunction = (...commands: ExecCommand[]) => void;
 
-export class Makfy {
+export class MakfyInstance {
   private readonly options: Options;
   private readonly args: object;
 
@@ -20,7 +21,7 @@ export class Makfy {
     this.args = args || {};
   }
 
-  exec = (...commands: ExecCommand[]) => {
+  exec: ExecFunction = (...commands: ExecCommand[]) => {
     for (const command of commands) {
       if (command === null || command === undefined) {
         // skip

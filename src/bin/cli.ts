@@ -4,11 +4,11 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as chalk from 'chalk';
 
-import { resetColors } from '../lib/utils';
+import { errorMessageForObject, resetColors } from '../lib/utils';
 import { MakfyError, ExecError } from '../lib/errors';
 import { runCommand, listAllCommands, listCommand } from '../lib/';
 import { isObject } from '../lib/utils';
-import { reservedArgs } from '../lib/argDefinitonParser';
+import { reservedArgNames } from '../lib/schema';
 import * as yargs from 'yargs';
 
 const programName = 'makfy';
@@ -48,10 +48,10 @@ const loadFile = () => {
     filename = argv.f;
   }
   if (!fs.existsSync(filename)) {
-    exitWithError(ErrCode.CliError, `Command file '${filename}' not found`);
+    exitWithError(ErrCode.CliError, `command file '${filename}' not found`);
   }
 
-  console.log(chalk.dim.gray(`Using command file '${filename}'...`));
+  console.log(chalk.dim.gray(`using command file '${filename}'...`));
 
   // try to load the user file
   const absoluteFilename = path.resolve(filename);
@@ -65,11 +65,13 @@ const loadFile = () => {
     return fileExports;
   }
   catch (err) {
-    exitWithError(ErrCode.UserFileError, `Error requiring ${filename}:\n${err.message}`);
+    exitWithError(ErrCode.UserFileError, `error requiring ${filename}:\n${err.message}`);
   }
 };
 
 const main = () => {
+  resetColors();
+
   if (argv.help || argv.h) {
     printProgramHelp();
     exitWithError(ErrCode.CliError);
@@ -85,18 +87,18 @@ const main = () => {
     const commandName = argv._.length > 0 ? argv._[0].trim() : undefined;
     if (commandName) {
       if (argv._.length > 1) {
-        exitWithError(ErrCode.CliError, `Specify only one command to list or don't specify any commands to list them all`);
+        exitWithError(ErrCode.CliError, `specify only one command to list or don't specify any commands to list them all`);
         return;
       }
 
       execute = () => {
-        const output = chalk.dim.gray(`Listing '${commandName}' command...\n\n`) + listCommand(fileExports.commands, commandName, true);
+        const output = chalk.dim.gray(`listing '${commandName}' command...\n\n`) + listCommand(fileExports.commands, commandName, true);
         console.log(output);
       };
     }
     else {
       execute = () => {
-        const output = chalk.dim.gray('Listing all commands...\n\n') + listAllCommands(fileExports.commands, true);
+        const output = chalk.dim.gray('listing all commands...\n\n') + listAllCommands(fileExports.commands, true);
         console.log(output);
       };
     }
@@ -110,7 +112,7 @@ const main = () => {
     }
 
     if (argv._.length > 1) {
-      exitWithError(ErrCode.CliError, 'Only one command can be run at once');
+      exitWithError(ErrCode.CliError, 'only one command can be run at the same time');
       return;
     }
 
@@ -122,7 +124,7 @@ const main = () => {
     const commandArgs = Object.assign({}, argv);
     delete commandArgs._;
     delete commandArgs.$0;
-    for (const resArg of reservedArgs) {
+    for (const resArg of reservedArgNames) {
       delete commandArgs[resArg];
     }
 
@@ -131,7 +133,7 @@ const main = () => {
       options = {};
     }
     if (!isObject(options)) {
-      exitWithError(ErrCode.UserFileError, `'options' exported property must be an object or undefined`);
+      exitWithError(ErrCode.UserFileError, errorMessageForObject(['options'], `must be an object or undefined`));
       return;
     }
     if (argv.profile) {

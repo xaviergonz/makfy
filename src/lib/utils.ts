@@ -36,3 +36,16 @@ export const isAlphanumericStringArray = (arr: any) => {
 export const getTimeString = () => {
   return chalk.dim.gray(`[${new Date(new Date().getTime()).toLocaleTimeString()}] `);
 };
+
+export const errorMessageForObject = (parts: (string | undefined)[], message: string) => {
+  return `${parts.filter((e) => e !== undefined).join('.')} - ${message}`;
+};
+
+export class Writer {
+  output: string = '';
+
+  writeLine(str?: string) {
+    this.output += (str ? str : '') + '\n';
+  }
+}
+

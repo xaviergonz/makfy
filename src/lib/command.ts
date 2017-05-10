@@ -1,0 +1,49 @@
+import { MakfyError } from './errors';
+import { errorMessageForObject } from './utils';
+import { parseArgDefinition, ArgDefinition, ParsedArgDefinition } from './commandArg';
+import { ExecFunction } from './MakfyInstance';
+import { commandSchema, validateInstance } from './schema';
+
+export interface Command {
+  desc?: string;
+  args: {
+    [argName: string]: ArgDefinition;
+  };
+  internal?: boolean;
+  run(exec: ExecFunction, args: object): void;
+}
+
+export interface ParsedCommand {
+  argDefinitions: {
+    [argName: string]: ParsedArgDefinition
+  };
+}
+
+export const parseCommand = (command: Command, cmdName: string, skipValidation: boolean): ParsedCommand => {
+  const error = (property: string | undefined, message: string): MakfyError => {
+    return new MakfyError(errorMessageForObject(['commands', cmdName, property], message));
+  };
+
+  if (!skipValidation) {
+    const validationResult = validateInstance(command, commandSchema);
+    if (!validationResult.valid) {
+      throw error(undefined, validationResult.toString());
+    }
+  }
+
+  const { args } = command;
+
+  // parse
+  const cmdInfo: ParsedCommand = {
+    argDefinitions: {}
+  };
+
+  if (args !== undefined) {
+    Object.keys(args).forEach((argName) => {
+      const argDefinition = args[argName];
+      cmdInfo.argDefinitions[argName] = parseArgDefinition(cmdName, argName, argDefinition, true);
+    });
+  }
+
+  return cmdInfo;
+};
