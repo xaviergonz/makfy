@@ -34,5 +34,5 @@ export const isAlphanumericStringArray = (arr: any) => {
 };
 
 export const getTimeString = () => {
-  return chalk.gray(`[${new Date(new Date().getTime()).toLocaleTimeString()}] `);
+  return chalk.dim.gray(`[${new Date(new Date().getTime()).toLocaleTimeString()}] `);
 };

@@ -6,10 +6,12 @@
   "bin": {
     "makfy": "dist/bin/cli.js"
   },
-  "private": true,
   "scripts": {
     "build": "tsc -p ."
   },
+  "files": [
+    "dist"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/xaviergonz/makfy.git"

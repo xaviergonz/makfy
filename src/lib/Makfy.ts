@@ -78,23 +78,23 @@ export class Makfy {
     }
 
     if (silentLevel <= 1) {
-      console.log(getTimeString() + chalk.blue(`> ${command}`));
+      console.log(getTimeString() + chalk.dim.blue(`> ${command}`));
     }
 
     const printProfileTime = () => {
-      if (this.options.profiling && silentLevel < 2) {
+      if (this.options.profile && silentLevel < 2) {
         const endTime = process.hrtime(startTime);
-        process.stdout.write(getTimeString() + chalk.cyan(`finished in ${prettyHrTime(endTime)}`) + chalk.blue(` > ${command}\n`));
+        process.stdout.write(getTimeString() + chalk.dim.gray(`finished in ${chalk.dim.magenta(prettyHrTime(endTime))}`) + chalk.dim.blue(` > ${command}\n`));
       }
     };
 
     try {
+      resetColors();
       child_process.execSync(command, {
         env: env,
         stdio: [process.stdin, silentLevel === 0 ? process.stdout : 'pipe', process.stderr]
       });
       printProfileTime();
-      resetColors();
     }
     catch (result) {
       printProfileTime();
@@ -104,6 +104,9 @@ export class Makfy {
       const err2 = `> ${command}`;
       process.stderr.write(getTimeString() + chalk.bgRed.bold.white(err1) + chalk.blue(` ${err2}\n`));
       throw new ExecError(`${err1} ${err2}`);
+    }
+    finally {
+      resetColors();
     }
   }
 }

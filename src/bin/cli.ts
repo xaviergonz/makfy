@@ -23,7 +23,7 @@ const enum ErrCode {
 const exitWithError = (code: ErrCode, message?: string) => {
   resetColors();
   if (message) {
-    console.error(chalk.red('[ERROR] ' + message));
+    console.error(chalk.dim.red('[ERROR] ' + message));
   }
   process.exit(code);
 };
@@ -36,10 +36,10 @@ const printProgramHelp = () => {
   console.log(`${programName} v${version}`);
   console.log();
   console.log(`Usage:`);
-  console.log(` - run command:       ${programName} [-f ${defaultFilename}] <command> ...commandOptions`);
-  console.log(` - list all commands: ${programName} [-f ${defaultFilename}] --list`);
-  console.log(` - list command:      ${programName} [-f ${defaultFilename}] <command> --list`);
-  console.log(` - show help (this):  ${programName} [--help]`);
+  console.log(` - run command:         ${programName} [-f ${defaultFilename}] <command> ...commandOptions`);
+  console.log(` - list all commands:   ${programName} [-f ${defaultFilename}] --list`);
+  console.log(` - list command:        ${programName} [-f ${defaultFilename}] <command> --list`);
+  console.log(` - show help (this):    ${programName} [--help]`);
 };
 
 const loadFile = () => {
@@ -51,7 +51,7 @@ const loadFile = () => {
     exitWithError(ErrCode.CliError, `Command file '${filename}' not found`);
   }
 
-  console.log(chalk.gray(`Using command file '${filename}'...`));
+  console.log(chalk.dim.gray(`Using command file '${filename}'...`));
 
   // try to load the user file
   const absoluteFilename = path.resolve(filename);
@@ -90,13 +90,13 @@ const main = () => {
       }
 
       execute = () => {
-        const output = chalk.gray(`Listing '${commandName}' command...\n\n`) + listCommand(fileExports.commands, commandName, true);
+        const output = chalk.dim.gray(`Listing '${commandName}' command...\n\n`) + listCommand(fileExports.commands, commandName, true);
         console.log(output);
       };
     }
     else {
       execute = () => {
-        const output = chalk.gray('Listing all commands...\n\n') + listAllCommands(fileExports.commands, true);
+        const output = chalk.dim.gray('Listing all commands...\n\n') + listAllCommands(fileExports.commands, true);
         console.log(output);
       };
     }
@@ -126,8 +126,20 @@ const main = () => {
       delete commandArgs[resArg];
     }
 
+    let options = fileExports.options;
+    if (options === undefined) {
+      options = {};
+    }
+    if (!isObject(options)) {
+      exitWithError(ErrCode.UserFileError, `'options' exported property must be an object or undefined`);
+      return;
+    }
+    if (argv.profile) {
+      options.profile = true;
+    }
+
     execute = () => {
-      runCommand(fileExports.commands, commandName, commandArgs, fileExports.options);
+      runCommand(fileExports.commands, commandName, commandArgs, options);
     };
   }
 

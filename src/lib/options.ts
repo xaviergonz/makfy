@@ -2,11 +2,11 @@ import { generateDefaultValues, validateValues, Schema } from './validation';
 import { MakfyError } from './errors';
 
 export interface Options {
-  profiling?: boolean;
+  profile?: boolean;
 }
 
 const validOptionsSchema: Schema = {
-  profiling: {
+  profile: {
     type: 'boolean',
     defaultValue: false
   }

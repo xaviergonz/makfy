@@ -36,7 +36,7 @@ export const runCommand = (commands: Commands, commandName: string, commandArgs:
   Object.keys(commandArgs).forEach((key) => {
     const argDef = argDefs[key];
     if (!argDef) {
-      console.error(chalk.magenta(`[WARN] Argument '${key}' is not defined as a valid argument for this command and will be ignored`));
+      console.error(chalk.dim.yellow(`[WARN] Argument '${key}' is not defined as a valid argument for this command and will be ignored`));
     }
   });
 
@@ -55,7 +55,7 @@ export const runCommand = (commands: Commands, commandName: string, commandArgs:
   commands[commandName].run(mf.exec, finalCommandArgs);
 
   const endTime = process.hrtime(startTime);
-  console.log('\n' + getTimeString() + chalk.bgGreen.bold.white(`'${commandName}' done in ${prettyHrTime(endTime)}!`));
+  console.log('\n' + getTimeString() + chalk.bgGreen.bold.white(`'${commandName}' done in ${prettyHrTime(endTime)}`));
   resetColors();
 };
 
