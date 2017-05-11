@@ -1,5 +1,5 @@
 import * as chalk from 'chalk';
-import { MakfyError } from './errors';
+import { MakfyError, RunError } from './errors';
 import { MakfyInstance } from './MakfyInstance';
 import { Options, parseOptions } from './options';
 import { ParsedArgDefinition } from './parser/commandArg';
@@ -14,7 +14,7 @@ const logWarn = (str: string) => {
 
 export const runCommand = (commands: Commands, commandName: string, commandArgs: object, options?: Options) => {
   if (!commandName) {
-    throw new MakfyError('No command name');
+    throw new MakfyError('command name missing');
   }
 
   const fullOptions = parseOptions(options, false);
@@ -28,6 +28,8 @@ export const runCommand = (commands: Commands, commandName: string, commandArgs:
   if (commands[commandName].internal) {
     throw new MakfyError('internal commands cannot be run directly');
   }
+
+  console.log(chalk.bgBlue.bold.white(`running command '${commandName}'...`));
 
   const argDefs = parsedCommand.argDefinitions;
 
@@ -48,10 +50,20 @@ export const runCommand = (commands: Commands, commandName: string, commandArgs:
 
   // run
   const startTime = process.hrtime();
-  console.log(chalk.bgBlue.bold.white(`running command '${commandName}'...`));
 
   const mf = new MakfyInstance(fullOptions, finalCommandArgs);
-  commands[commandName].run(mf.exec, finalCommandArgs);
+  try {
+    commands[commandName].run(mf.exec, finalCommandArgs);
+  }
+  catch (err) {
+    if (!(err instanceof RunError) && !(err instanceof MakfyError)) {
+      // an error most probably thrown by the execution of run
+      throw new MakfyError(err.message);
+    }
+    else {
+      throw err;
+    }
+  }
 
   const endTime = process.hrtime(startTime);
   console.log('\n' + getTimeString() + chalk.bgGreen.bold.white(`'${commandName}' done in ${prettyHrTime(endTime)}`));

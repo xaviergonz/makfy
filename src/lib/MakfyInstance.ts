@@ -1,7 +1,7 @@
 import * as chalk from 'chalk';
 import * as child_process from 'child_process';
 import * as path from 'path';
-import { ExecError, MakfyError } from './errors';
+import { MakfyError, RunError } from './errors';
 import { Options } from './options';
 import { Command } from './schema/commands';
 import { ExecCommand, ExecFunction } from './schema/runtime';
@@ -100,10 +100,10 @@ export class MakfyInstance {
       printProfileTime();
       const code = result.status;
 
-      const err1 = `Failed with code ${code}`;
+      const err1 = `failed with code ${code}`;
       const err2 = `> ${command}`;
       process.stderr.write(getTimeString() + chalk.bgRed.bold.white(err1) + chalk.blue(` ${err2}\n`));
-      throw new ExecError(`${err1} ${err2}`);
+      throw new RunError(`${err1} ${err2}`);
     }
     finally {
       resetColors();

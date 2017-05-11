@@ -47,7 +47,7 @@ export const parseArgDefinition = (cmdName: string, argName: string, argDefiniti
   const normalizedType = normalizeType(argDefinition.type);
 
   const validateError = (err: string): MakfyError => {
-    return new MakfyError(`Argument '${argName}' - ${err}`);
+    return new MakfyError(`argument '${argName}' - ${err}`);
   };
 
   let parse: ParseArgFunction;

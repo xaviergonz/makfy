@@ -5,7 +5,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as yargs from 'yargs';
 import { listAllCommands, listCommand, runCommand } from '../lib/';
-import { ExecError, MakfyError } from '../lib/errors';
+import { MakfyError, RunError } from '../lib/errors';
 import { reservedArgNames } from '../lib/schema/args';
 
 import { errorMessageForObject, isObject, resetColors } from '../lib/utils';
@@ -152,7 +152,7 @@ const main = () => {
     if (err instanceof MakfyError) {
       exitWithError(ErrCode.UserFileError, err.message);
     }
-    else if (err instanceof ExecError) {
+    else if (err instanceof RunError) {
       // the message should be printed already
       exitWithError(ErrCode.ExecError);
     }

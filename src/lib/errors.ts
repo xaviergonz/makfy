@@ -6,10 +6,10 @@ export class MakfyError extends Error {
   }
 }
 
-export class ExecError extends Error {
+export class RunError extends Error {
   constructor(message: string) {
     super(message);
-    Object.setPrototypeOf(this, ExecError.prototype);
+    Object.setPrototypeOf(this, RunError.prototype);
     this.name = this.constructor.name;
   }
 }
