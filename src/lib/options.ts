@@ -1,6 +1,7 @@
 import { MakfyError } from './errors';
+import { validateInstance } from './schema';
+import { optionsSchema } from './schema/options';
 import { errorMessageForObject } from './utils';
-import { optionsSchema, validateInstance } from './schema';
 
 export interface Options {
   profile?: boolean;

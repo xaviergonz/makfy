@@ -1,15 +1,14 @@
 #! /usr/bin/env node
 
-import * as path from 'path';
-import * as fs from 'fs';
 import * as chalk from 'chalk';
-
-import { errorMessageForObject, resetColors } from '../lib/utils';
-import { MakfyError, ExecError } from '../lib/errors';
-import { runCommand, listAllCommands, listCommand } from '../lib/';
-import { isObject } from '../lib/utils';
-import { reservedArgNames } from '../lib/schema';
+import * as fs from 'fs';
+import * as path from 'path';
 import * as yargs from 'yargs';
+import { listAllCommands, listCommand, runCommand } from '../lib/';
+import { ExecError, MakfyError } from '../lib/errors';
+import { reservedArgNames } from '../lib/schema/args';
+
+import { errorMessageForObject, isObject, resetColors } from '../lib/utils';
 
 const programName = 'makfy';
 const argv = yargs.argv;

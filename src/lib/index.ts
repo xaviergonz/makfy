@@ -1,9 +1,10 @@
 import * as chalk from 'chalk';
-import { resetColors, isObject, getTimeString, Writer, errorMessageForObject } from './utils';
-import { parseCommands, Commands } from './commands';
-import { parseOptions, Options } from './options';
+import { parseCommands } from './commands';
 import { MakfyError } from './errors';
 import { MakfyInstance } from './MakfyInstance';
+import { Options, parseOptions } from './options';
+import { Commands } from './schema/commands';
+import { errorMessageForObject, getTimeString, isObject, resetColors, Writer } from './utils';
 const prettyHrTime = require('pretty-hrtime');
 
 const logWarn = (str: string) => {

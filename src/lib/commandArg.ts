@@ -1,31 +1,7 @@
 import { MakfyError } from './errors';
+import { validateInstance } from './schema';
+import { ArgDefinition, argSchema, EnumArgDefinition, FlagArgDefinition, StringArgDefinition } from './schema/args';
 import { errorMessageForObject } from './utils';
-import { argSchema, validateInstance } from './schema';
-
-// an optional flag, false by default
-export interface FlagArgDefinition {
-  type: 'flag' | 'f';
-  byDefault?: false;
-  desc?: string;
-}
-
-// any string, required if no default value is given
-export interface StringArgDefinition {
-  type: 'string' | 's';
-  byDefault?: string;
-  desc?: string;
-}
-
-// an enum, required if not default value is given
-// the default value must be inside the enum given in values; values must contain at least one element
-export interface EnumArgDefinition {
-  type: 'enum' | 'e';
-  values: string[];
-  byDefault?: string;
-  desc?: string;
-}
-
-export type ArgDefinition = FlagArgDefinition | StringArgDefinition | EnumArgDefinition;
 
 const enum Type {
   Flag,

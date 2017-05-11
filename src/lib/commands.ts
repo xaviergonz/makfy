@@ -1,11 +1,8 @@
-import { Command, parseCommand, ParsedCommand } from './command';
+import { parseCommand, ParsedCommand } from './command';
 import { MakfyError } from './errors';
+import { validateInstance } from './schema';
+import { Commands, commandsSchema } from './schema/commands';
 import { errorMessageForObject, isObject } from './utils';
-import { commandsSchema, validateInstance } from './schema';
-
-export interface Commands {
-  [commandName: string]: Command;
-}
 
 export interface ParsedCommands {
   [cmdName: string]: ParsedCommand;

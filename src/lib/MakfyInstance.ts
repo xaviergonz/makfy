@@ -1,16 +1,15 @@
-import * as path from 'path';
 import * as chalk from 'chalk';
 import * as child_process from 'child_process';
-import { resetColors, getTimeString } from './utils';
+import * as path from 'path';
 import { ExecError, MakfyError } from './errors';
 import { Options } from './options';
-import { Command } from './command';
+import { Command } from './schema/commands';
+import { ExecCommand, ExecFunction } from './schema/runtime';
+import { getTimeString, resetColors } from './utils';
 const prettyHrTime = require('pretty-hrtime');
 
 const pathEnvName = process.platform === 'win32' ? 'Path' : 'path';
 
-export type ExecCommand = string | (() => any) | Command;
-export type ExecFunction = (...commands: ExecCommand[]) => void;
 
 export class MakfyInstance {
   private readonly options: Options;

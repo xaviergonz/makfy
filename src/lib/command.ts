@@ -1,17 +1,8 @@
+import { parseArgDefinition, ParsedArgDefinition } from './commandArg';
 import { MakfyError } from './errors';
+import { validateInstance } from './schema';
+import { Command, commandSchema } from './schema/commands';
 import { errorMessageForObject } from './utils';
-import { parseArgDefinition, ArgDefinition, ParsedArgDefinition } from './commandArg';
-import { ExecFunction } from './MakfyInstance';
-import { commandSchema, validateInstance } from './schema';
-
-export interface Command {
-  desc?: string;
-  args: {
-    [argName: string]: ArgDefinition;
-  };
-  internal?: boolean;
-  run(exec: ExecFunction, args: object): void;
-}
 
 export interface ParsedCommand {
   argDefinitions: {
