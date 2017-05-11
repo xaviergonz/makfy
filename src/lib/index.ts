@@ -1,10 +1,11 @@
 import * as chalk from 'chalk';
-import { parseCommands } from './commands';
 import { MakfyError } from './errors';
 import { MakfyInstance } from './MakfyInstance';
 import { Options, parseOptions } from './options';
+import { ParsedArgDefinition } from './parser/commandArg';
+import { parseCommands } from './parser/commands';
 import { Commands } from './schema/commands';
-import { errorMessageForObject, getTimeString, isObject, resetColors, Writer } from './utils';
+import { errorMessageForObject, getTimeString, isObject, resetColors, TextWriter } from './utils';
 const prettyHrTime = require('pretty-hrtime');
 
 const logWarn = (str: string) => {
@@ -62,7 +63,7 @@ export const listCommand = (commands: Commands, commandName: string, listArgumen
     throw new MakfyError('missing command name');
   }
 
-  const w = new Writer();
+  const w = new TextWriter();
 
   // this also makes sure the command exists
   const parsedCommands = parseCommands(commands, false);
@@ -73,26 +74,70 @@ export const listCommand = (commands: Commands, commandName: string, listArgumen
 
   const command = commands[commandName];
 
-  let title = commandName;
-  if (command.desc !== undefined) {
-    title += ` - ${command.desc}`;
-  }
-  w.writeLine(title);
+  let title = chalk.bgBlue.bold.white(commandName);
 
+  const aw = new TextWriter();
   if (listArguments) {
-    const argDefs = parsedCommand.argDefinitions;
-    const hasArgs = Object.keys(argDefs).length > 0;
-    if (hasArgs) {
-      w.writeLine('-- Arguments:');
-      Object.keys(argDefs).forEach((key) => {
-        const argDef = argDefs[key];
-        w.writeLine(`   + ${argDef.help}`);
-      });
-    }
-    else {
-      w.writeLine('-- No arguments');
+    const argDefsList: [string, ParsedArgDefinition][] = Object.entries(parsedCommand.argDefinitions);
+    // sort alphabetically
+    argDefsList.sort((a, b) => {
+      return a[0].toLowerCase().localeCompare(b[0].toLowerCase());
+    });
+
+    if (argDefsList.length > 0) {
+      const requiredArgs = argDefsList.filter((e) => e[1].required);
+      const optionalArgs = argDefsList.filter((e) => !e[1].required);
+
+      const formatLeftHelp = (argDef: ParsedArgDefinition) => {
+        const {required, leftHelp} = argDef;
+        const leftBracket = required ? '' : '[';
+        const rightBracket = required ? '' : ']';
+
+        return chalk.dim.gray(` ${leftBracket}${leftHelp}${rightBracket}`);
+      };
+
+      // find left help side max length
+      const lengths = argDefsList.map((entry) => chalk.stripColor(formatLeftHelp(entry[1])).length);
+      const maxLeftLength = Math.max(...lengths) + 4;
+
+      const writeArgHelp = (argDef: [string, ParsedArgDefinition]) => {
+        const {rightHelp} = argDef[1];
+
+        const formattedLeftHelp = formatLeftHelp(argDef[1]);
+        let help = formattedLeftHelp;
+
+        if (rightHelp) {
+          for (let i = chalk.stripColor(formattedLeftHelp).length; i < maxLeftLength; i++) {
+            help += ' ';
+          }
+          help += rightHelp;
+        }
+        aw.writeLine(`  ${help}`);
+
+        title += formattedLeftHelp;
+      };
+
+      if (requiredArgs.length > 0) {
+        requiredArgs.forEach((e) => {
+          writeArgHelp(e);
+        });
+      }
+
+      if (optionalArgs.length > 0) {
+        optionalArgs.forEach((e) => {
+          writeArgHelp(e);
+        });
+      }
+
     }
   }
+
+  w.writeLine(title);
+  if (command.desc !== undefined) {
+    w.writeLine(chalk.dim.gray(` - ${command.desc}`));
+  }
+  w.write(aw.output);
+  w.writeLine(chalk.reset(''));
 
   return w.output;
 };
@@ -107,7 +152,7 @@ export const listAllCommands = (commands: Commands, listArguments = true, listIn
   for (const commandName of Object.keys(commands)) {
     const command = commands[commandName];
     if (!command.internal || listInternal) {
-      output += listCommand(commands, commandName, listArguments) + '\n';
+      output += listCommand(commands, commandName, listArguments);
     }
   }
 

@@ -1,8 +1,8 @@
+import { MakfyError } from '../errors';
+import { validateInstance } from '../schema';
+import { Command, commandSchema } from '../schema/commands';
+import { errorMessageForObject } from '../utils';
 import { parseArgDefinition, ParsedArgDefinition } from './commandArg';
-import { MakfyError } from './errors';
-import { validateInstance } from './schema';
-import { Command, commandSchema } from './schema/commands';
-import { errorMessageForObject } from './utils';
 
 export interface ParsedCommand {
   argDefinitions: {

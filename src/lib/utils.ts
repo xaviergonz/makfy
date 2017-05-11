@@ -22,11 +22,16 @@ export const errorMessageForObject = (parts: (string | undefined)[], message: st
   return `${parts.filter((e) => e !== undefined).join('.')} - ${message}`;
 };
 
-export class Writer {
+export class TextWriter {
   output: string = '';
 
+  write(str?: string) {
+    this.output += (str ? str : '');
+  }
+
   writeLine(str?: string) {
-    this.output += (str ? str : '') + '\n';
+    this.write(str);
+    this.write('\n');
   }
 }
 

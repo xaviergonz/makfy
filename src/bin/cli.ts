@@ -34,11 +34,11 @@ const version = '0.0.1';
 const printProgramHelp = () => {
   console.log(`${programName} v${version}`);
   console.log();
-  console.log(`Usage:`);
-  console.log(` - run command:         ${programName} [-f ${defaultFilename}] <command> ...commandOptions`);
-  console.log(` - list all commands:   ${programName} [-f ${defaultFilename}] --list`);
-  console.log(` - list command:        ${programName} [-f ${defaultFilename}] <command> --list`);
-  console.log(` - show help (this):    ${programName} [--help]`);
+  console.log(`usage:`);
+  console.log(` - run command:          ${programName} [-f ${defaultFilename}] <command> ...commandOptions`);
+  console.log(` - list all commands:    ${programName} [-f ${defaultFilename}] --list`);
+  console.log(` - list command:         ${programName} [-f ${defaultFilename}] <command> --list`);
+  console.log(` - show help (this):     ${programName} [--help]`);
 };
 
 const loadFile = () => {
@@ -50,7 +50,7 @@ const loadFile = () => {
     exitWithError(ErrCode.CliError, `command file '${filename}' not found`);
   }
 
-  console.log(chalk.dim.gray(`using command file '${filename}'...`));
+  console.log(chalk.dim.gray(`using command file '${chalk.dim.magenta(filename)}'...`));
 
   // try to load the user file
   const absoluteFilename = path.resolve(filename);

@@ -1,7 +1,8 @@
-import { MakfyError } from './errors';
-import { validateInstance } from './schema';
-import { ArgDefinition, argSchema, EnumArgDefinition, FlagArgDefinition, StringArgDefinition } from './schema/args';
-import { errorMessageForObject } from './utils';
+import * as chalk from 'chalk';
+import { MakfyError } from '../errors';
+import { validateInstance } from '../schema';
+import { ArgDefinition, argSchema, EnumArgDefinition, FlagArgDefinition, StringArgDefinition } from '../schema/args';
+import { errorMessageForObject } from '../utils';
 
 const enum Type {
   Flag,
@@ -25,7 +26,9 @@ const normalizeType = (type: string) => {
 export type ParseArgFunction = (value: any) => any;
 
 export interface ParsedArgDefinition {
-  help: string;
+  leftHelp: string;
+  rightHelp?: string;
+  required: boolean;
   parse: ParseArgFunction;
 }
 
@@ -48,11 +51,13 @@ export const parseArgDefinition = (cmdName: string, argName: string, argDefiniti
   };
 
   let parse: ParseArgFunction;
+  let required;
   const argRequiredMessage = 'argument is required';
 
   if (normalizedType === Type.Flag) {
     let {byDefault} = argDefinition as FlagArgDefinition;
     byDefault = false;
+    required = false;
 
     parse = (value: any) => {
       if (value === undefined) value = byDefault;
@@ -65,6 +70,7 @@ export const parseArgDefinition = (cmdName: string, argName: string, argDefiniti
   }
   else if (normalizedType === Type.String) {
     const {byDefault} = argDefinition as StringArgDefinition;
+    required = byDefault === undefined;
 
     parse = (value: any) => {
       if (value === undefined) value = byDefault;
@@ -80,6 +86,7 @@ export const parseArgDefinition = (cmdName: string, argName: string, argDefiniti
   }
   else if (normalizedType === Type.Enum) {
     const {byDefault, values} = argDefinition as EnumArgDefinition;
+    required = byDefault === undefined;
 
     parse = (value: any) => {
       if (value === undefined) value = byDefault;
@@ -98,8 +105,9 @@ export const parseArgDefinition = (cmdName: string, argName: string, argDefiniti
   }
 
   return {
-    help: getHelpForArg(argName, argDefinition),
-    parse: parse
+    ...getHelpForArg(argName, argDefinition),
+    required,
+    parse
   };
 };
 
@@ -107,37 +115,49 @@ const getHelpForArg = (argName: string, argDefinition: ArgDefinition) => {
   const { byDefault, desc } = argDefinition;
   const normalizedType = normalizeType(argDefinition.type);
 
-  const getHelpString = (equals: string | undefined, defaultValue: any) => {
+  const getLeftHelp = (equals: string | undefined, required: boolean) => {
     let str = (argName.length <= 1 ? '-' : '--') + argName;
+    if (required) {
+      str = chalk.dim.red(str);
+    }
+    else {
+      str = chalk.dim.blue(str);
+    }
+
     if (equals) {
-      str = `${str}=${equals}`;
+      str += chalk.dim.gray(`=${equals}`);
     }
-    if (defaultValue) {
-      str = `(opt) ${str}`;
-    }
-    else {
-      str = `(req) ${str}`;
-    }
-    if (desc) {
-      str = `${str} - ${desc}`;
-    }
-    if (defaultValue) {
-      str = `${str} (default: ${defaultValue})`;
-    }
-    else {
-      str = `${str} (no default)`;
-    }
+
     return str;
+  };
+
+  const getRightHelp = (equals: string | undefined, defaultValue: any) => {
+    let str = '';
+    if (desc) {
+      str = chalk.dim.gray(desc);
+    }
+    if (defaultValue) {
+      str += chalk.dim.gray(' (default: ' + chalk.dim.magenta(defaultValue) + ')');
+    }
+
+    return str.length > 0 ? str : undefined;
+  };
+
+  const getHelp = (equals: string | undefined, defaultValue: any) => {
+    return {
+      leftHelp: getLeftHelp(equals, defaultValue === undefined),
+      rightHelp: getRightHelp(equals, defaultValue),
+    };
   };
 
   switch (normalizedType) {
     case Type.Flag:
-      return getHelpString(undefined, 'false');
+      return getHelp(undefined, 'false');
     case Type.String:
-      return getHelpString('string', byDefault);
+      return getHelp('string', byDefault);
     case Type.Enum:
       const { values } = argDefinition as EnumArgDefinition;
-      return getHelpString(values.join('|'), byDefault);
+      return getHelp(values.join('|'), byDefault);
     default:
       throw new Error(`internal error - unknown type: ${normalizedType}`);
   }
