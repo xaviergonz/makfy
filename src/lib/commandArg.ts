@@ -1,51 +1,47 @@
 import { MakfyError } from './errors';
-import { isAlphanumericStringArray, errorMessageForObject } from './utils';
+import { errorMessageForObject } from './utils';
 import { argSchema, validateInstance } from './schema';
 
-/*
- { kind: 'flag' or 'f' } - an optional flag, false by default
- { kind: 'string' or 's', byDefault: '' } - any string, required if no defaultValue is given
- { kind: [ STRA, STRB, STRC], byDefault: STRA } - a choice, required if not defaultValue is given
- */
 // an optional flag, false by default
 export interface FlagArgDefinition {
-  kind: 'flag' | 'f';
+  type: 'flag' | 'f';
   byDefault?: false;
   desc?: string;
 }
 
 // any string, required if no default value is given
 export interface StringArgDefinition {
-  kind: 'string' | 's';
+  type: 'string' | 's';
   byDefault?: string;
   desc?: string;
 }
 
-// a choice, required if not default value is given
-// the default value must be inside the choices given in kind; kind must contain at least one element
-export interface ChoiceArgDefinition {
-  kind: string[];
+// an enum, required if not default value is given
+// the default value must be inside the enum given in values; values must contain at least one element
+export interface EnumArgDefinition {
+  type: 'enum' | 'e';
+  values: string[];
   byDefault?: string;
   desc?: string;
 }
 
-export type ArgDefinition = FlagArgDefinition | StringArgDefinition | ChoiceArgDefinition;
+export type ArgDefinition = FlagArgDefinition | StringArgDefinition | EnumArgDefinition;
 
-const enum Kind {
+const enum Type {
   Flag,
   String,
-  Choice
+  Enum
 }
 
-const normalizeKind = (kind: any) => {
-  if (kind === 'f' || kind === 'flag') {
-    return Kind.Flag;
+const normalizeType = (type: string) => {
+  if (type === 'f' || type === 'flag') {
+    return Type.Flag;
   }
-  if (kind === 's' || kind === 'string') {
-    return Kind.String;
+  if (type === 's' || type === 'string') {
+    return Type.String;
   }
-  if (isAlphanumericStringArray(kind)) {
-    return Kind.Choice;
+  if (type === 'e' || type === 'enum') {
+    return Type.Enum;
   }
   return undefined;
 };
@@ -69,7 +65,7 @@ export const parseArgDefinition = (cmdName: string, argName: string, argDefiniti
     }
   }
 
-  const normalizedKind = normalizeKind(argDefinition.kind);
+  const normalizedType = normalizeType(argDefinition.type);
 
   const validateError = (err: string): MakfyError => {
     return new MakfyError(`Argument '${argName}' - ${err}`);
@@ -78,8 +74,8 @@ export const parseArgDefinition = (cmdName: string, argName: string, argDefiniti
   let parse: ParseArgFunction;
   const argRequiredMessage = 'argument is required';
 
-  if (normalizedKind === Kind.Flag) {
-    let {byDefault, kind} = argDefinition as FlagArgDefinition;
+  if (normalizedType === Type.Flag) {
+    let {byDefault} = argDefinition as FlagArgDefinition;
     byDefault = false;
 
     parse = (value: any) => {
@@ -91,8 +87,8 @@ export const parseArgDefinition = (cmdName: string, argName: string, argDefiniti
       throw validateError(`a flag argument cannot have a value`);
     };
   }
-  else if (normalizedKind === Kind.String) {
-    const {byDefault, kind} = argDefinition as StringArgDefinition;
+  else if (normalizedType === Type.String) {
+    const {byDefault} = argDefinition as StringArgDefinition;
 
     parse = (value: any) => {
       if (value === undefined) value = byDefault;
@@ -106,8 +102,8 @@ export const parseArgDefinition = (cmdName: string, argName: string, argDefiniti
       return value;
     };
   }
-  else if (normalizedKind === Kind.Choice) {
-    const {byDefault, kind} = argDefinition as ChoiceArgDefinition;
+  else if (normalizedType === Type.Enum) {
+    const {byDefault, values} = argDefinition as EnumArgDefinition;
 
     parse = (value: any) => {
       if (value === undefined) value = byDefault;
@@ -115,8 +111,8 @@ export const parseArgDefinition = (cmdName: string, argName: string, argDefiniti
       if (typeof value === 'number') {
         value = String(value);
       }
-      if (typeof value !== 'string' || !kind.includes(value)) {
-        throw validateError(`argument must be one of: ${kind.join(', ')}`);
+      if (typeof value !== 'string' || !values.includes(value)) {
+        throw validateError(`argument must be one of: ${values.join(', ')}`);
       }
       return value;
     };
@@ -133,7 +129,7 @@ export const parseArgDefinition = (cmdName: string, argName: string, argDefiniti
 
 const getHelpForArg = (argName: string, argDefinition: ArgDefinition) => {
   const { byDefault, desc } = argDefinition;
-  const normalizedKind = normalizeKind(argDefinition.kind);
+  const normalizedType = normalizeType(argDefinition.type);
 
   const getHelpString = (equals: string | undefined, defaultValue: any) => {
     let str = (argName.length <= 1 ? '-' : '--') + argName;
@@ -158,15 +154,15 @@ const getHelpForArg = (argName: string, argDefinition: ArgDefinition) => {
     return str;
   };
 
-  switch (normalizedKind) {
-    case Kind.Flag:
+  switch (normalizedType) {
+    case Type.Flag:
       return getHelpString(undefined, 'false');
-    case Kind.String:
+    case Type.String:
       return getHelpString('string', byDefault);
-    case Kind.Choice:
-      const { kind } = argDefinition as ChoiceArgDefinition;
-      return getHelpString(kind.join('|'), byDefault);
+    case Type.Enum:
+      const { values } = argDefinition as EnumArgDefinition;
+      return getHelpString(values.join('|'), byDefault);
     default:
-      throw new Error(`internal error - unknown kind: ${normalizedKind}`);
+      throw new Error(`internal error - unknown type: ${normalizedType}`);
   }
 };

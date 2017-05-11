@@ -14,25 +14,6 @@ export const isFunction = (func: any) => {
   return typeof func === 'function';
 };
 
-export const isAlphanumericString = (str: string, emptyIsValid = false) => {
-  if (str.length <= 0) {
-    return emptyIsValid;
-  }
-  return (/^[a-z0-9]+$/i.test(str));
-};
-
-export const isAlphanumericStringArray = (arr: any) => {
-  if (!Array.isArray(arr)) {
-    return false;
-  }
-  for (const e of arr) {
-    if (!isAlphanumericString(e)) {
-      return false;
-    }
-  }
-  return true;
-};
-
 export const getTimeString = () => {
   return chalk.dim.gray(`[${new Date(new Date().getTime()).toLocaleTimeString()}] `);
 };

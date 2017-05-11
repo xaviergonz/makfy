@@ -26,9 +26,9 @@ export const optionsSchema: Schema = {
 export const flagArgSchema: Schema = {
   id: '/flagArg',
   type: 'object',
-  required: ['kind'],
+  required: ['type'],
   properties: {
-    kind: {
+    type: {
       type: 'string',
       'enum': [ 'f', 'flag' ] // tslint:disable-line:object-literal-key-quotes
     },
@@ -43,9 +43,9 @@ export const flagArgSchema: Schema = {
 export const stringArgSchema: Schema = {
   id: '/stringArg',
   type: 'object',
-  required: ['kind'],
+  required: ['type'],
   properties: {
-    kind: {
+    type: {
       type: 'string',
       'enum': [ 's', 'string' ] // tslint:disable-line:object-literal-key-quotes
     },
@@ -59,12 +59,16 @@ export const stringArgSchema: Schema = {
   additionalProperties: false,
 };
 
-export const choiceArgSchema: Schema = {
-  id: '/choiceArg',
+export const enumArgSchema: Schema = {
+  id: '/enumArg',
   type: 'object',
-  required: ['kind'],
+  required: ['type', 'values'],
   properties: {
-    kind: {
+    type: {
+      type: 'string',
+      'enum': [ 'e', 'enum' ] // tslint:disable-line:object-literal-key-quotes
+    },
+    values: {
       type: 'array',
       minItems: 1,
       uniqueItems: true,
@@ -76,7 +80,7 @@ export const choiceArgSchema: Schema = {
     byDefault: {
       type: 'string',
       pattern: alphanumericPattern,
-      matchesKind: true
+      matchesValues: true
     } as Schema,
     desc: {
       type: 'string'
@@ -90,7 +94,7 @@ export const argSchema: Schema = {
   oneOf: [
     { $ref: '/flagArg' } as Schema,
     { $ref: '/stringArg' } as Schema,
-    { $ref: '/choiceArg' } as Schema,
+    { $ref: '/enumArg' } as Schema,
   ]
 };
 
@@ -146,21 +150,21 @@ export const validateInstance = (obj: object, sch: Schema): ValidatorResult => {
     return undefined;
   };
 
-  (v.attributes as any).matchesKind = (instance: any, schema: Schema, options: Options, ctx: SchemaContext) => {
-    if (!(schema as any).matchesKind) return;
+  (v.attributes as any).matchesValues = (instance: any, schema: Schema, options: Options, ctx: SchemaContext) => {
+    if (!(schema as any).matchesValues) return;
 
     if (instance === undefined) return undefined;
     const path = ctx.propertyPath.split('.');
     const command = path[1];
     const arg = path[3];
-    const kind = obj[command].args[arg].kind;
-    if (!Array.isArray(kind)) return undefined;
+    const values = obj[command].args[arg].values;
+    if (!Array.isArray(values)) return undefined;
 
     if (typeof instance !== 'string') {
       return 'must be a string';
     }
-    if (!kind.includes(instance)) {
-      return `must be one of: ${kind.join(', ')}`;
+    if (!values.includes(instance)) {
+      return `must be one of: ${values.join(', ')}`;
     }
 
     return undefined;
@@ -183,7 +187,7 @@ export const validateInstance = (obj: object, sch: Schema): ValidatorResult => {
 
   v.addSchema(flagArgSchema, flagArgSchema.id);
   v.addSchema(stringArgSchema, stringArgSchema.id);
-  v.addSchema(choiceArgSchema, choiceArgSchema.id);
+  v.addSchema(enumArgSchema, enumArgSchema.id);
   v.addSchema(argSchema, argSchema.id);
   v.addSchema(argsSchema, argsSchema.id);
   v.addSchema(commandSchema, commandSchema.id);
