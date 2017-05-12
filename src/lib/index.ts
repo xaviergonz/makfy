@@ -1,6 +1,6 @@
 import * as chalk from 'chalk';
 import { MakfyError, RunError } from './errors';
-import { MakfyInstance } from './MakfyInstance';
+import { MakfyInstance, SubRunContext } from './MakfyInstance';
 import { Options, parseOptions } from './options';
 import { ParsedArgDefinition } from './parser/commandArg';
 import { parseCommands } from './parser/commands';
@@ -8,13 +8,18 @@ import { Commands } from './schema/commands';
 import { errorMessageForObject, getTimeString, isObject, resetColors, TextWriter } from './utils';
 const prettyHrTime = require('pretty-hrtime');
 
-const logWarn = (str: string) => {
-  console.error(chalk.dim.yellow(`[WARN] ${str}`));
+const logWarn = (commandName: string, str: string) => {
+  console.error(chalk.bold.blue(`@${commandName}`) + ' - ' + chalk.dim.red(`[WARN] ${str}`));
 };
 
-export const runCommand = (commands: Commands, commandName: string, commandArgs: object, options?: Options) => {
+export const runCommand = (commands: Commands, commandName: string, commandArgs: object, options: Options | undefined, subRunContext: SubRunContext) => {
   if (!commandName) {
     throw new MakfyError('command name missing');
+  }
+
+  let internal = false;
+  if (subRunContext) {
+    internal = subRunContext.internal;
   }
 
   const fullOptions = parseOptions(options, false);
@@ -25,11 +30,13 @@ export const runCommand = (commands: Commands, commandName: string, commandArgs:
     throw new MakfyError(`command '${commandName}' not found`);
   }
 
-  if (commands[commandName].internal) {
+  if (!internal && commands[commandName].internal) {
     throw new MakfyError('internal commands cannot be run directly');
   }
 
-  console.log(chalk.bgBlue.bold.white(`running command '${commandName}'...`));
+  if (!internal) {
+    console.log(chalk.bgBlue.bold.white(`@${commandName} - running...`));
+  }
 
   const argDefs = parsedCommand.argDefinitions;
 
@@ -37,7 +44,7 @@ export const runCommand = (commands: Commands, commandName: string, commandArgs:
   Object.keys(commandArgs).forEach((key) => {
     const argDef = argDefs[key];
     if (!argDef) {
-      logWarn(`argument '${key}' is not defined as a valid argument for this command and will be ignored`);
+      logWarn(commandName, `argument '${key}' is not defined as a valid argument for this command and will be ignored`);
     }
   });
 
@@ -51,7 +58,7 @@ export const runCommand = (commands: Commands, commandName: string, commandArgs:
   // run
   const startTime = process.hrtime();
 
-  const mf = new MakfyInstance(fullOptions, finalCommandArgs);
+  const mf = new MakfyInstance(fullOptions, finalCommandArgs, subRunContext);
   try {
     commands[commandName].run(mf.exec, finalCommandArgs);
   }
@@ -66,7 +73,9 @@ export const runCommand = (commands: Commands, commandName: string, commandArgs:
   }
 
   const endTime = process.hrtime(startTime);
-  console.log('\n' + getTimeString() + chalk.bgGreen.bold.white(`'${commandName}' done in ${prettyHrTime(endTime)}`));
+  if (!internal) {
+    console.log('\n' + getTimeString() + chalk.bgGreen.bold.white(`'${commandName}' done in ${prettyHrTime(endTime)}`));
+  }
   resetColors();
 };
 

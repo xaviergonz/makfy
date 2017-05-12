@@ -6,7 +6,7 @@ import * as path from 'path';
 import * as yargs from 'yargs';
 import { listAllCommands, listCommand, runCommand } from '../lib/';
 import { MakfyError, RunError } from '../lib/errors';
-import { reservedArgNames } from '../lib/schema/args';
+import { inheritedArgs, reservedArgNames } from '../lib/schema/args';
 
 import { errorMessageForObject, isObject, resetColors } from '../lib/utils';
 
@@ -14,9 +14,9 @@ const programName = 'makfy';
 const argv = yargs.argv;
 
 const enum ErrCode {
-  CliError = -3,
-  UserFileError = -2,
-  ExecError = -1
+  CliError = 1,
+  UserFileError = 2,
+  ExecError = 3
 }
 
 const exitWithError = (code: ErrCode, message?: string) => {
@@ -35,25 +35,47 @@ const printProgramHelp = () => {
   console.log(`${programName} v${version}`);
   console.log();
   console.log(`usage:`);
-  console.log(` - run command:          ${programName} [-f ${defaultFilename}] <command> ...commandOptions`);
+  console.log(` - run command:          ${programName} [-f ${defaultFilename}] <command> [--profile] ...commandOptions`);
   console.log(` - list all commands:    ${programName} [-f ${defaultFilename}] --list`);
   console.log(` - list command:         ${programName} [-f ${defaultFilename}] <command> --list`);
   console.log(` - show help (this):     ${programName} [--help]`);
+  console.log(` [--profile]             force show the time it takes to run each subcommand`);
+  console.log(` [--color/--no-color]    force colored/uncolored output (default: autodetect)`);
 };
 
-const loadFile = () => {
+interface FileToLoad {
+  filename: string;
+  absoluteFilename: string;
+}
+
+const getFileToLoad = (internal: boolean): FileToLoad => {
   let filename = defaultFilename;
-  if (argv.f) {
-    filename = argv.f;
+  if (argv.f || argv.file) {
+    if (argv.f && argv.file) {
+      exitWithError(ErrCode.CliError, `-f and --file cannot be used at the same time`);
+    }
+    filename = argv.f || argv.file;
   }
   if (!fs.existsSync(filename)) {
     exitWithError(ErrCode.CliError, `command file '${filename}' not found`);
   }
 
-  console.log(chalk.dim.gray(`using command file '${chalk.dim.magenta(filename)}'...`));
+  if (!internal) {
+    console.log(chalk.dim.gray(`using command file '${chalk.dim.magenta(filename)}'...`));
+  }
+
+  const absoluteFilename = path.resolve(filename);
+
+  return {
+    filename,
+    absoluteFilename
+  };
+};
+
+const loadFile = (fileToLoad: FileToLoad) => {
+  const {filename, absoluteFilename} = fileToLoad;
 
   // try to load the user file
-  const absoluteFilename = path.resolve(filename);
   try {
     const fileExports = require(absoluteFilename);
 
@@ -78,10 +100,12 @@ const main = () => {
   }
 
   let execute;
+  const internal = !!argv.internal;
 
   if (argv.list || argv.l) {
     // list
-    const fileExports = loadFile();
+    const fileToLoad = getFileToLoad(internal);
+    const fileExports = loadFile(fileToLoad);
 
     const commandName = argv._.length > 0 ? argv._[0].trim() : undefined;
     if (commandName) {
@@ -115,14 +139,23 @@ const main = () => {
       return;
     }
 
-    const fileExports = loadFile();
+    const fileToLoad = getFileToLoad(internal);
+    const fileExports = loadFile(fileToLoad);
 
     const commandName = argv._[0].trim();
 
-    // remove reserved args
+    // remove reserved args / create inherited args
     const commandArgs = Object.assign({}, argv);
     delete commandArgs._;
     delete commandArgs.$0;
+
+    const inheritedArgValues = {};
+    for (const [ name, value ] of Object.entries(commandArgs)) {
+      if (inheritedArgs.includes(name)) {
+        inheritedArgValues[name] = value;
+      }
+    }
+
     for (const resArg of reservedArgNames) {
       delete commandArgs[resArg];
     }
@@ -140,7 +173,15 @@ const main = () => {
     }
 
     execute = () => {
-      runCommand(fileExports.commands, commandName, commandArgs, options);
+      runCommand(fileExports.commands, commandName, commandArgs, options, {
+        internal: internal,
+        inheritedArgs: inheritedArgValues,
+        makfyFileAbsolutePath: fileToLoad.absoluteFilename,
+        cli: {
+          nodePath: process.argv[0],
+          jsPath: process.argv[1],
+        }
+      });
     };
   }
 

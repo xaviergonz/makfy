@@ -23,8 +23,10 @@ export const commandSchema: Schema = {
     args: argsSchema,
     run: {
       isFunction: true
-    } as Schema
-
+    } as Schema,
+    internal: {
+      type: 'boolean'
+    }
   },
   additionalProperties: false,
 };

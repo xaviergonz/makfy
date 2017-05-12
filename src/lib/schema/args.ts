@@ -7,6 +7,12 @@ export const reservedArgNames = [
   'h', 'help',
   'v', 'version',
   'color', 'no-color',
+  'profile',
+  'internal'
+];
+
+export const inheritedArgs = [
+  'color', 'no-color',
   'profile'
 ];
 

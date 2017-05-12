@@ -3,21 +3,33 @@ import * as child_process from 'child_process';
 import * as path from 'path';
 import { MakfyError, RunError } from './errors';
 import { Options } from './options';
-import { Command } from './schema/commands';
 import { ExecCommand, ExecFunction } from './schema/runtime';
-import { getTimeString, resetColors } from './utils';
+import { getTimeString, objectToCommandLineArgs, resetColors } from './utils';
+
 const prettyHrTime = require('pretty-hrtime');
+const shellescape = require('any-shell-escape');
 
 const pathEnvName = process.platform === 'win32' ? 'Path' : 'path';
 
+export interface SubRunContext {
+  internal: boolean;
+  cli: {
+    nodePath: string,
+    jsPath: string,
+  };
+  makfyFileAbsolutePath: string;
+  inheritedArgs: object;
+}
 
 export class MakfyInstance {
   private readonly options: Options;
   private readonly args: object;
+  private readonly subRunContext?: SubRunContext;
 
-  constructor(options: Options, args: object) {
+  constructor(options: Options, args: object, subRunContext: SubRunContext | undefined) {
     this.options = options;
     this.args = args || {};
+    this.subRunContext = subRunContext;
   }
 
   exec: ExecFunction = (...commands: ExecCommand[]) => {
@@ -28,15 +40,15 @@ export class MakfyInstance {
       else if (typeof command === 'function') {
         this._execFunction(command);
       }
-      else if (typeof command === 'object') {
-        this._execObject(command);
-      }
       else if (typeof command === 'string') {
         if (command.startsWith('?')) {
           this._execHelpString(command);
         }
+        else if (command.startsWith('@')) {
+          this._execSubCommand(command);
+        }
         else {
-          this._execCommandString(command);
+          this._execCommandString(command, false);
         }
       }
     }
@@ -46,20 +58,35 @@ export class MakfyInstance {
     command();
   }
 
-  private _execObject = (command: Command) => {
-    if (command.run) {
-      command.run(this.exec, this.args);
+  private _execSubCommand = (command: string) => {
+    const src = this.subRunContext;
+
+    if (!src) {
+      throw new MakfyError('no subRunContext defined');
     }
-    else {
-      throw new MakfyError('Command inside exec was an object but had no run method');
+
+    const cmd = command.substr(1).trim();
+    const commandName = cmd.split(' ')[0];
+    if (!commandName || commandName.length < 1) {
+      throw new MakfyError(`the command name after '@' cannot be empty`);
     }
+
+    const cmdLineObj = {
+      internal: true,
+      f: src.makfyFileAbsolutePath,
+      _: [ commandName ],
+      ...src.inheritedArgs
+    };
+    const fullCommand = shellescape([ src.cli.nodePath, src.cli.jsPath, ...objectToCommandLineArgs(cmdLineObj)]) + cmd.substr(commandName.length);
+
+    this._execCommandString(fullCommand, true);
   }
 
   private _execHelpString = (command: string) => {
     console.log('\n' + getTimeString() + chalk.bgCyan.bold.white(`${command.substr(1).trim()}`));
   }
 
-  private _execCommandString = (command: string) => {
+  private _execCommandString = (command: string, internal: boolean) => {
     // add node_modules/.bin to path
     const env = Object.assign({}, process.env, {
       [pathEnvName]: `${path.resolve(path.join('node_modules/.bin'))}${path.delimiter}${process.env[pathEnvName] || ''}`
@@ -68,21 +95,23 @@ export class MakfyInstance {
     const startTime = process.hrtime();
 
     let silentLevel = 0;
-    if (command.startsWith('%%')) {
-      silentLevel = 2;
-      command = command.substr(2).trim();
-    }
-    else if (command.startsWith('%')) {
-      silentLevel = 1;
-      command = command.substr(1).trim();
-    }
+    if (!internal) {
+      if (command.startsWith('%%')) {
+        silentLevel = 2;
+        command = command.substr(2).trim();
+      }
+      else if (command.startsWith('%')) {
+        silentLevel = 1;
+        command = command.substr(1).trim();
+      }
 
-    if (silentLevel <= 1) {
-      console.log(getTimeString() + chalk.dim.blue(`> ${command}`));
+      if (silentLevel <= 1) {
+        console.log(getTimeString() + chalk.dim.blue(`> ${command}`));
+      }
     }
 
     const printProfileTime = () => {
-      if (this.options.profile && silentLevel < 2) {
+      if (!internal && this.options.profile && silentLevel < 2) {
         const endTime = process.hrtime(startTime);
         process.stdout.write(getTimeString() + chalk.dim.gray(`finished in ${chalk.dim.magenta(prettyHrTime(endTime))}`) + chalk.dim.blue(` > ${command}\n`));
       }
@@ -102,7 +131,9 @@ export class MakfyInstance {
 
       const err1 = `failed with code ${code}`;
       const err2 = `> ${command}`;
-      process.stderr.write(getTimeString() + chalk.bgRed.bold.white(err1) + chalk.blue(` ${err2}\n`));
+      if (!internal) {
+        process.stderr.write(getTimeString() + chalk.bgRed.bold.white(err1) + chalk.blue(` ${err2}\n`));
+      }
       throw new RunError(`${err1} ${err2}`);
     }
     finally {

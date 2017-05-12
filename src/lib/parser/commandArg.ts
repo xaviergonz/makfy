@@ -2,7 +2,7 @@ import * as chalk from 'chalk';
 import { MakfyError } from '../errors';
 import { validateInstance } from '../schema';
 import { ArgDefinition, argSchema, EnumArgDefinition, FlagArgDefinition, StringArgDefinition } from '../schema/args';
-import { errorMessageForObject } from '../utils';
+import { argNameToDashedArgName, errorMessageForObject } from '../utils';
 
 const enum Type {
   Flag,
@@ -116,7 +116,7 @@ const getHelpForArg = (argName: string, argDefinition: ArgDefinition) => {
   const normalizedType = normalizeType(argDefinition.type);
 
   const getLeftHelp = (equals: string | undefined, required: boolean) => {
-    let str = (argName.length <= 1 ? '-' : '--') + argName;
+    let str = argNameToDashedArgName(argName);
     if (required) {
       str = chalk.dim.red(str);
     }
