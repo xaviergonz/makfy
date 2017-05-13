@@ -15,11 +15,12 @@ export interface RunCommandOptions {
   commands: Commands;
   commandName: string;
   commandArgs: object | undefined;
+  makfyFilename: string;
   options: PartialOptions | undefined;
 }
 
 export const runCommandAsync = async (runCommandOptions: RunCommandOptions) => {
-  const {commands, commandName, commandArgs, options} = runCommandOptions;
+  const {commands, commandName, commandArgs, options, makfyFilename} = runCommandOptions;
 
   if (!commandName) {
     throw new MakfyError('command name missing', undefined);
@@ -46,7 +47,9 @@ export const runCommandAsync = async (runCommandOptions: RunCommandOptions) => {
   const execContext: ExecContext = {
     commands: commands,
     parsedCommands: parsedCommands,
+    makfyFilename: makfyFilename,
     options: parsedOptions,
+    syncMode: true,
     idStack: [],
   };
 

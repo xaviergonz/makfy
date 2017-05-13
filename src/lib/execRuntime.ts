@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as tmp from 'tmp';
 import { MakfyError, RunError } from './errors';
+import { checkHashCollectionMatchesAsync, createCacheFolder, getHashCollectionFilename, loadHashCollectionFileAsync, saveHashCollectionFileAsync } from './hash';
 import { OutputBuffer } from './OutputBuffer';
 import { ParsedCommand } from './parser/command';
 import { ParsedCommands } from './parser/commands';
@@ -11,7 +12,7 @@ import { Command, Commands } from './schema/commands';
 import { FullOptions } from './schema/options';
 import { ExecCommand, ExecFunction, ExecObject } from './schema/runtime';
 import * as shellescape from './shellescape';
-import { formatContextId, formatContextIdStack, resetColors } from './utils';
+import { formatContextId, formatContextIdStack, resetColors, unrollGlobPatternsAsync } from './utils';
 import Socket = NodeJS.Socket;
 import Timer = NodeJS.Timer;
 
@@ -28,6 +29,7 @@ export interface ExecContext {
   commands: Commands;
   parsedCommands: ParsedCommands;
   options: FullOptions;
+  makfyFilename: string;
 
   idStack: string[];
   cwd?: string;
@@ -46,6 +48,10 @@ const logWarn = (idStack: string[], showTime: boolean, str: string) => {
   console.error(formatContextIdStack(idStack, showTime) + chalk.dim.red(`[WARN] ${str}`));
 };
 
+const logInfo = (idStack: string[], showTime: boolean, str: string) => {
+  console.log(formatContextIdStack(idStack, showTime) + chalk.dim.blue(`${str}`));
+};
+
 export const runCommandAsync = async (commandName: string, commandArgs: object, baseContext: ExecContext, unknownArgMeansError: boolean) => {
   const { commands, parsedCommands } = baseContext;
   const command = commands[commandName];
@@ -53,6 +59,14 @@ export const runCommandAsync = async (commandName: string, commandArgs: object, 
   const argDefs = parsedCommand.argDefinitions;
 
   const baseIdStack = [...baseContext.idStack, chalk.dim.blue(commandName)];
+
+  const warn = (msg: string) => {
+    logWarn(baseIdStack, baseContext.options.showTime, msg);
+  };
+
+  const info = (msg: string) => {
+    logInfo(baseIdStack, baseContext.options.showTime, msg);
+  };
 
   // warn for ignored args
   Object.keys(commandArgs).forEach((key) => {
@@ -62,7 +76,7 @@ export const runCommandAsync = async (commandName: string, commandArgs: object, 
         throw new MakfyError(`argument '${key}' is not defined as a valid argument for command '${commandName}'`, baseContext);
       }
       else {
-        logWarn(baseIdStack, baseContext.options.showTime, `argument '${key}' is not defined as a valid argument for this command and will be ignored`);
+        warn(`argument '${key}' is not defined as a valid argument for this command and will be ignored`);
       }
     }
   });
@@ -73,6 +87,42 @@ export const runCommandAsync = async (commandName: string, commandArgs: object, 
     const argDef = argDefs[key];
     finalCommandArgs[key] = argDef.parse(commandArgs[key]);
   });
+
+  // check hashes before
+  let skipIfSame = command.skipIfSame;
+  if (skipIfSame) {
+    skipIfSame = skipIfSame.map((e) => e.trim()).filter((e) => e.length > 0);
+    if (skipIfSame.length > 0) {
+      info('checking if command can be skipped...');
+
+      // unroll glob patterns
+      const files = await unrollGlobPatternsAsync(skipIfSame);
+
+      createCacheFolder();
+      const hashFilename = getHashCollectionFilename(baseContext.makfyFilename, commandName);
+
+      info(`checking hash of ${files.length} files against '${hashFilename}'...`);
+      let oldHashCollection;
+      //noinspection EmptyCatchBlockJS
+      try {
+        oldHashCollection = await loadHashCollectionFileAsync(hashFilename);
+      }
+      catch (err) {
+        // do nothing
+      }
+
+      const newHashCollection = await checkHashCollectionMatchesAsync(oldHashCollection, files, 'sha1');
+      if (newHashCollection) {
+        info(`cached hash did not match, NOT skipping`);
+        await saveHashCollectionFileAsync(hashFilename, newHashCollection);
+      }
+      else {
+        info(`cached hash matches, skipping`);
+        return;
+      }
+
+    }
+  }
 
   const execFunc = createExecFunctionContext(baseContext, baseIdStack, true);
 

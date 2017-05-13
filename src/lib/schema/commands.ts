@@ -9,6 +9,7 @@ export interface Command {
     [argName: string]: ArgDefinition;
   };
   internal?: boolean;
+  skipIfSame: string[];
   run(exec: ExecFunction, args: object): void;
 }
 
@@ -26,6 +27,13 @@ export const commandSchema: Schema = {
     } as Schema,
     internal: {
       type: 'boolean'
+    },
+    skipIfSame: {
+      type: 'array',
+      items: {
+        type: 'string',
+        uniqueItems: true
+      }
     }
   },
   additionalProperties: false,

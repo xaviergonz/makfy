@@ -178,6 +178,7 @@ const mainAsync = async () => {
 
     execute = async () => {
       await runCommandAsync({
+        makfyFilename: fileToLoad.filename,
         commands: fileExports.commands,
         commandName: commandName,
         commandArgs: commandArgs,

@@ -1,6 +1,8 @@
 import * as chalk from 'chalk';
 import { ExecContext } from './execRuntime';
 
+const glob = require('glob');
+
 export const resetColors = () => {
   const reset = chalk.reset('');
   process.stdout.write(reset);
@@ -68,6 +70,31 @@ export const formatContextIdStack = (idStack: string[], showTime: boolean) => {
 
 export const formatContextId = (context: ExecContext) => {
   return formatContextIdStack(context.idStack, context.options.showTime);
+};
+
+export const unrollGlobPatternAsync = async (globPattern: string): Promise<string[]> => {
+  return await new Promise<string[]>((resolve, reject) => {
+    glob(globPattern, { strict: true, nodir: true }, (err: Error | null, files: string[]) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+
+      resolve(files);
+    });
+
+  });
+};
+
+export const unrollGlobPatternsAsync = async (globPatterns: string[]): Promise<string[]>  => {
+  const set = new Set();
+  for (const globPattern of globPatterns) {
+    const files = await unrollGlobPatternAsync(globPattern);
+    for (const file of files) {
+      set.add(file);
+    }
+  }
+  return [...set];
 };
 
 export class TextWriter {
