@@ -10,7 +10,7 @@ export interface ParsedCommands {
 
 export const parseCommands = (commands: Commands, skipValidation: boolean): ParsedCommands => {
   const error = (property: string | undefined, message: string): MakfyError => {
-    return new MakfyError(errorMessageForObject(['commands', property], message));
+    return new MakfyError(errorMessageForObject(['commands', property], message), undefined);
   };
 
   if (!isObject(commands)) {

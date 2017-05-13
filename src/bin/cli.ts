@@ -6,8 +6,9 @@ import * as path from 'path';
 import * as yargs from 'yargs';
 import { listAllCommands, listCommand, runCommandAsync } from '../lib/';
 import { MakfyError, RunError } from '../lib/errors';
-import { inheritedArgs, reservedArgNames } from '../lib/schema/args';
-import { errorMessageForObject, isObject, resetColors } from '../lib/utils';
+import { alphanumericPattern } from '../lib/schema';
+import { reservedArgNames } from '../lib/schema/args';
+import { errorMessageForObject, formatContextId, isObject, resetColors } from '../lib/utils';
 
 const entries = require('object.entries');
 
@@ -20,10 +21,10 @@ const enum ErrCode {
   ExecError = 3
 }
 
-const exitWithError = (code: ErrCode, message?: string) => {
+const exitWithError = (code: ErrCode, message?: string, prefix?: string) => {
   resetColors();
   if (message) {
-    console.error(chalk.dim.red('[ERROR] ' + message));
+    console.error((prefix ? prefix : '') + chalk.dim.red('[ERROR] ' + message));
   }
   process.exit(code);
 };
@@ -33,6 +34,7 @@ const defaultFilename = programName + 'file.js';
 const version = '0.0.1';
 
 const printProgramHelp = () => {
+  // TODO: colorize this
   console.log(`${programName} v${version}`);
   console.log();
   console.log(`usage:`);
@@ -41,6 +43,7 @@ const printProgramHelp = () => {
   console.log(` - list command:         ${programName} [-f ${defaultFilename}] <command> --list`);
   console.log(` - show help (this):     ${programName} [--help]`);
   console.log(` [--profile]             force show the time it takes to run each subcommand`);
+  console.log(` [--show-time]           force show the current time`);
   console.log(` [--color/--no-color]    force colored/uncolored output (default: autodetect)`);
 };
 
@@ -49,7 +52,7 @@ interface FileToLoad {
   absoluteFilename: string;
 }
 
-const getFileToLoad = (internal: boolean): FileToLoad => {
+const getFileToLoad = (): FileToLoad => {
   let filename = defaultFilename;
   if (argv.f || argv.file) {
     if (argv.f && argv.file) {
@@ -61,9 +64,7 @@ const getFileToLoad = (internal: boolean): FileToLoad => {
     exitWithError(ErrCode.CliError, `command file '${filename}' not found`);
   }
 
-  if (!internal) {
-    console.log(chalk.dim.gray(`using command file '${chalk.dim.magenta(filename)}'...`));
-  }
+  console.log(chalk.dim.gray(`using command file '${chalk.dim.magenta(filename)}'...`));
 
   const absoluteFilename = path.resolve(filename);
 
@@ -101,11 +102,10 @@ const mainAsync = async () => {
   }
 
   let execute: () => Promise<void>;
-  const internal = !!argv.internal;
 
   if (argv.list || argv.l) {
     // list
-    const fileToLoad = getFileToLoad(internal);
+    const fileToLoad = getFileToLoad();
     const fileExports = loadFile(fileToLoad);
 
     const commandName = argv._.length > 0 ? argv._[0].trim() : undefined;
@@ -140,25 +140,25 @@ const mainAsync = async () => {
       return;
     }
 
-    const fileToLoad = getFileToLoad(internal);
+    const fileToLoad = getFileToLoad();
     const fileExports = loadFile(fileToLoad);
 
     const commandName = argv._[0].trim();
 
-    // remove reserved args / create inherited args
+    // remove reserved args
     const commandArgs = Object.assign({}, argv);
     delete commandArgs._;
     delete commandArgs.$0;
 
-    const inheritedArgValues = {};
-    for (const [ name, value ] of entries(commandArgs)) {
-      if (inheritedArgs.includes(name)) {
-        inheritedArgValues[name] = value;
-      }
-    }
-
     for (const resArg of reservedArgNames) {
       delete commandArgs[resArg];
+    }
+
+    // remove non alphanumeric args (because yargs transforms fooBar into foo-bar and fooBar)
+    for (const argName of Object.keys(argv)) {
+      if (!new RegExp(alphanumericPattern).test(argName)) {
+        delete commandArgs[argName];
+      }
     }
 
     let options = fileExports.options;
@@ -172,18 +172,16 @@ const mainAsync = async () => {
     if (argv.profile) {
       options.profile = true;
     }
+    if (argv.showTime) {
+      options.showTime = true;
+    }
 
     execute = async () => {
-      await runCommandAsync(fileExports.commands, commandName, {
-        args: commandArgs,
-        options: options,
-        internal: internal,
-        inheritedArgs: inheritedArgValues,
-        makfyFileAbsolutePath: fileToLoad.absoluteFilename,
-        cli: {
-          nodePath: process.argv[0],
-          jsPath: process.argv[1],
-        }
+      await runCommandAsync({
+        commands: fileExports.commands,
+        commandName: commandName,
+        commandArgs: commandArgs,
+        options: options
       });
     };
   }
@@ -194,7 +192,8 @@ const mainAsync = async () => {
   catch (err) {
     resetColors();
     if (err instanceof MakfyError) {
-      exitWithError(ErrCode.UserFileError, err.message);
+      const prefix = (err.execContext ? formatContextId(err.execContext) : undefined);
+      exitWithError(ErrCode.UserFileError, err.message, prefix);
     }
     else if (err instanceof RunError) {
       // the message should be printed already

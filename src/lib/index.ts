@@ -1,72 +1,62 @@
 import * as chalk from 'chalk';
 import { MakfyError, RunError } from './errors';
-import { MakfyInstance, RunContext } from './MakfyInstance';
+import * as execRuntime from './execRuntime';
+import { ExecContext } from './execRuntime';
 import { parseOptions } from './options';
 import { ParsedArgDefinition } from './parser/commandArg';
 import { parseCommands } from './parser/commands';
 import { Commands } from './schema/commands';
+import { FullOptions, PartialOptions } from './schema/options';
 import { errorMessageForObject, getTimeString, isObject, resetColors, TextWriter } from './utils';
 const prettyHrTime = require('pretty-hrtime');
 const entries = require('object.entries');
 
-const logWarn = (commandName: string, str: string) => {
-  console.error(chalk.bold.blue(`@${commandName}`) + ' - ' + chalk.dim.red(`[WARN] ${str}`));
-};
+export interface RunCommandOptions {
+  commands: Commands;
+  commandName: string;
+  commandArgs: object | undefined;
+  options: PartialOptions | undefined;
+}
 
-export const runCommandAsync = async (commands: Commands, commandName: string, runContext: RunContext) => {
+export const runCommandAsync = async (runCommandOptions: RunCommandOptions) => {
+  const {commands, commandName, commandArgs, options} = runCommandOptions;
+
   if (!commandName) {
-    throw new MakfyError('command name missing');
+    throw new MakfyError('command name missing', undefined);
   }
 
-  const rc = { ...runContext };
-  rc.args = rc.args || {};
-  const {internal, args, options} = rc;
-
-  rc.options = parseOptions(options, false);
+  const parsedOptions: FullOptions = parseOptions(options, false);
 
   const parsedCommands = parseCommands(commands, false);
+  const command = commands[commandName];
   const parsedCommand = parsedCommands[commandName];
-  if (!parsedCommand) {
-    throw new MakfyError(`command '${commandName}' not found`);
+  if (!parsedCommand || !command) {
+    throw new MakfyError(`command '${commandName}' not found`, undefined);
   }
 
-  if (!internal && commands[commandName].internal) {
-    throw new MakfyError('internal commands cannot be run directly');
+  if (command.internal) {
+    throw new MakfyError('internal commands cannot be run directly', undefined);
   }
 
-  if (!internal) {
-    console.log(chalk.bgBlue.bold.white(`@${commandName} - running...`));
-  }
-
-  const argDefs = parsedCommand.argDefinitions;
-
-  // warn for ignored args
-  Object.keys(args).forEach((key) => {
-    const argDef = argDefs[key];
-    if (!argDef) {
-      logWarn(commandName, `argument '${key}' is not defined as a valid argument for this command and will be ignored`);
-    }
-  });
-
-  // validate arguments and set default values
-  const finalCommandArgs = {};
-  Object.keys(argDefs).forEach((key) => {
-    const argDef = argDefs[key];
-    finalCommandArgs[key] = argDef.parse(args[key]);
-  });
-  rc.args = finalCommandArgs;
+  console.log(getTimeString(parsedOptions.showTime) + chalk.bgBlue.bold.white(`${commandName} - running...`));
 
   // run
   const startTime = process.hrtime();
 
-  const mf = new MakfyInstance(rc);
+  const execContext: ExecContext = {
+    commands: commands,
+    parsedCommands: parsedCommands,
+    options: parsedOptions,
+    idStack: [],
+  };
+
   try {
-    await commands[commandName].run(mf.exec, rc.args);
+    await execRuntime.runCommandAsync(commandName, commandArgs || {}, execContext, false);
   }
   catch (err) {
     if (!(err instanceof RunError) && !(err instanceof MakfyError)) {
       // an error most probably thrown by the execution of run
-      throw new MakfyError(err.message);
+      throw new MakfyError(err.message, undefined);
     }
     else {
       throw err;
@@ -74,15 +64,13 @@ export const runCommandAsync = async (commands: Commands, commandName: string, r
   }
 
   const endTime = process.hrtime(startTime);
-  if (!internal) {
-    console.log('\n' + getTimeString() + chalk.bgGreen.bold.white(`'${commandName}' done in ${prettyHrTime(endTime)}`));
-  }
+  console.log('\n' + getTimeString(parsedOptions.showTime) + chalk.bgGreen.bold.white(`'${commandName}' done in ${prettyHrTime(endTime)}`));
   resetColors();
 };
 
 export const listCommand = (commands: Commands, commandName: string, listArguments = true) => {
   if (!commandName) {
-    throw new MakfyError('missing command name');
+    throw new MakfyError('missing command name', undefined);
   }
 
   const w = new TextWriter();
@@ -91,7 +79,7 @@ export const listCommand = (commands: Commands, commandName: string, listArgumen
   const parsedCommands = parseCommands(commands, false);
   const parsedCommand = parsedCommands[commandName];
   if (!parsedCommand) {
-    throw new MakfyError(`command '${commandName}' not found`);
+    throw new MakfyError(`command '${commandName}' not found`, undefined);
   }
 
   const command = commands[commandName];
@@ -166,7 +154,7 @@ export const listCommand = (commands: Commands, commandName: string, listArgumen
 
 export const listAllCommands = (commands: Commands, listArguments = true, listInternal = false) => {
   if (!isObject(commands)) {
-    throw new MakfyError(errorMessageForObject(['commands'], `must be an object (did you export it?)`));
+    throw new MakfyError(errorMessageForObject(['commands'], `must be an object (did you export it?)`), undefined);
   }
 
   let output = '';

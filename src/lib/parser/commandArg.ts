@@ -34,7 +34,7 @@ export interface ParsedArgDefinition {
 
 export const parseArgDefinition = (cmdName: string, argName: string, argDefinition: ArgDefinition, skipValidation: boolean): ParsedArgDefinition => {
   const error = (property: string | undefined, message: string): MakfyError => {
-    return new MakfyError(errorMessageForObject(['commands', cmdName, 'args', argName, property], message));
+    return new MakfyError(errorMessageForObject(['commands', cmdName, 'args', argName, property], message), undefined);
   };
 
   if (!skipValidation) {
@@ -47,7 +47,7 @@ export const parseArgDefinition = (cmdName: string, argName: string, argDefiniti
   const normalizedType = normalizeType(argDefinition.type);
 
   const validateError = (err: string): MakfyError => {
-    return new MakfyError(`argument '${argName}' - ${err}`);
+    return new MakfyError(`argument '${argName}' - ${err}`, undefined);
   };
 
   let parse: ParseArgFunction;

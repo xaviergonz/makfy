@@ -1,23 +1,20 @@
 import { MakfyError } from './errors';
 import { validateInstance } from './schema';
-import { optionsSchema } from './schema/options';
+import { FullOptions, optionsSchema, PartialOptions } from './schema/options';
 import { errorMessageForObject } from './utils';
 
-export interface Options {
-  profile?: boolean;
-}
-
-const defaultOptions: Partial<Options> = {
-  profile: false
+const defaultOptions: FullOptions = {
+  profile: false,
+  showTime: false,
 };
 
-export const parseOptions = (options: Options | undefined, skipValidation: boolean) => {
+export const parseOptions = (options: PartialOptions | undefined, skipValidation: boolean): FullOptions => {
   const fullOptions = { ...defaultOptions, ...options };
 
   if (!skipValidation) {
     const validationResult = validateInstance(fullOptions, optionsSchema);
     if (!validationResult.valid) {
-      throw new MakfyError(errorMessageForObject(['options'], validationResult.toString()));
+      throw new MakfyError(errorMessageForObject(['options'], validationResult.toString()), undefined);
     }
   }
 

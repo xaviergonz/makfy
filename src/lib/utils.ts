@@ -1,4 +1,5 @@
 import * as chalk from 'chalk';
+import { ExecContext } from './execRuntime';
 
 export const resetColors = () => {
   const reset = chalk.reset('');
@@ -14,7 +15,8 @@ export const isFunction = (func: any) => {
   return typeof func === 'function';
 };
 
-export const getTimeString = () => {
+export const getTimeString = (show: boolean) => {
+  if (!show) return '';
   return chalk.dim.gray(`[${new Date(new Date().getTime()).toLocaleTimeString()}] `);
 };
 
@@ -26,6 +28,7 @@ export const argNameToDashedArgName = (argName: string) => {
   return (argName.length <= 1 ? '-' : '--') + argName;
 };
 
+// TODO: remove this?
 export const objectToCommandLineArgs = (obj: any) => {
   const arr = [];
 
@@ -57,6 +60,14 @@ export const objectToCommandLineArgs = (obj: any) => {
   }
 
   return arr;
+};
+
+export const formatContextIdStack = (idStack: string[], showTime: boolean) => {
+  return getTimeString(showTime) + idStack.join(chalk.dim.gray('/')) + '  ';
+};
+
+export const formatContextId = (context: ExecContext) => {
+  return formatContextIdStack(context.idStack, context.options.showTime);
 };
 
 export class TextWriter {

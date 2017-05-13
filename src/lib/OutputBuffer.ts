@@ -1,6 +1,5 @@
 import Socket = NodeJS.Socket;
 import * as chalk from 'chalk';
-import { getTimeString } from './utils';
 
 export interface OutputBufferData {
   type: string;
@@ -10,7 +9,7 @@ export interface OutputBufferData {
 export interface OutputBufferSocketConfig {
   [id: string]: {
     socket: Socket;
-    color: string;
+    color?: string;
   };
 }
 
@@ -29,6 +28,15 @@ export class OutputBuffer {
     }
   }
 
+  writeString(type: string, str: string) {
+    if (chalk.stripColor(str).length > 0) {
+      this._output.push({
+        type: type,
+        data: Buffer.from(str, 'utf-8')
+      });
+    }
+  }
+
   flush() {
     const linePrefix = this._linePrefix;
 
@@ -37,32 +45,39 @@ export class OutputBuffer {
     for (const b of this._output) {
       const type = b.type;
       if (type !== lastType) {
-        lastEndedInNewLine = true;
         lastType = type;
+        lastEndedInNewLine = true;
       }
 
       const socketConfig = this._socketConfig[b.type];
       if (!socketConfig) continue;
+
       const {socket, color} = socketConfig;
 
       let str = b.data.toString('utf-8');
+
       str = str.split('\r').join('');
 
       const lines = str.split('\n');
       const prefixedLines: string[] = [];
       for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        if (i === 0 && !lastEndedInNewLine) {
+        let line = lines[i];
+        if (color) {
+          line = chalk.dim[color](line);
+        }
+        if ((i === lines.length - 1 && chalk.stripColor(line).length <= 0) || (i === 0 && !lastEndedInNewLine)) {
           prefixedLines.push(line);
         }
         else {
-          prefixedLines.push(linePrefix + getTimeString() + chalk.dim[color](type + '/  ') + line);
+          prefixedLines.push(linePrefix + line);
         }
       }
 
       const text = prefixedLines.join('\n');
-      lastEndedInNewLine = text.length > 0 && text[text.length - 1] === '\n';
       socket.write(text);
+
+      const uncoloredText = chalk.stripColor(text);
+      lastEndedInNewLine = uncoloredText.length > 0 && uncoloredText[uncoloredText.length - 1] === '\n';
     }
 
     this._output = [];

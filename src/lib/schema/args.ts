@@ -6,14 +6,9 @@ export const reservedArgNames = [
   'l', 'list',
   'h', 'help',
   'v', 'version',
-  'color', 'no-color',
+  'color', 'noColor', 'no-color',
   'profile',
-  'internal'
-];
-
-export const inheritedArgs = [
-  'color', 'no-color',
-  'profile'
+  'showTime', 'show-time',
 ];
 
 

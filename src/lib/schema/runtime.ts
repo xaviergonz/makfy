@@ -1,7 +1,5 @@
-import { Command } from './commands';
-
 export interface ExecObject {
-  _: string | Command; // command name or actual command object
+  _: string; // command name
   args?: {
     [argName: string]: string | boolean;
   };
