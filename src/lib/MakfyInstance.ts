@@ -11,25 +11,23 @@ const shellescape = require('any-shell-escape');
 
 const pathEnvName = process.platform === 'win32' ? 'Path' : 'path';
 
-export interface SubRunContext {
+export interface RunContext {
+  options: Options;
+  args: object;
   internal: boolean;
+  inheritedArgs: object;
   cli: {
     nodePath: string,
     jsPath: string,
   };
   makfyFileAbsolutePath: string;
-  inheritedArgs: object;
 }
 
 export class MakfyInstance {
-  private readonly options: Options;
-  private readonly args: object;
-  private readonly subRunContext?: SubRunContext;
+  private readonly runContext: RunContext;
 
-  constructor(options: Options, args: object, subRunContext: SubRunContext | undefined) {
-    this.options = options;
-    this.args = args || {};
-    this.subRunContext = subRunContext;
+  constructor(runContext: RunContext) {
+    this.runContext = runContext;
   }
 
   exec: ExecFunction = (...commands: ExecCommand[]) => {
@@ -59,11 +57,7 @@ export class MakfyInstance {
   }
 
   private _execSubCommand = (command: string) => {
-    const src = this.subRunContext;
-
-    if (!src) {
-      throw new MakfyError('no subRunContext defined');
-    }
+    const runContext = this.runContext;
 
     const cmd = command.substr(1).trim();
     const commandName = cmd.split(' ')[0];
@@ -73,11 +67,11 @@ export class MakfyInstance {
 
     const cmdLineObj = {
       internal: true,
-      f: src.makfyFileAbsolutePath,
+      f: runContext.makfyFileAbsolutePath,
       _: [ commandName ],
-      ...src.inheritedArgs
+      ...runContext.inheritedArgs
     };
-    const fullCommand = shellescape([ src.cli.nodePath, src.cli.jsPath, ...objectToCommandLineArgs(cmdLineObj)]) + cmd.substr(commandName.length);
+    const fullCommand = shellescape([ runContext.cli.nodePath, runContext.cli.jsPath, ...objectToCommandLineArgs(cmdLineObj)]) + cmd.substr(commandName.length);
 
     this._execCommandString(fullCommand, true);
   }
@@ -111,7 +105,7 @@ export class MakfyInstance {
     }
 
     const printProfileTime = () => {
-      if (!internal && this.options.profile && silentLevel < 2) {
+      if (!internal && this.runContext.options.profile && silentLevel < 2) {
         const endTime = process.hrtime(startTime);
         process.stdout.write(getTimeString() + chalk.dim.gray(`finished in ${chalk.dim.magenta(prettyHrTime(endTime))}`) + chalk.dim.blue(` > ${command}\n`));
       }

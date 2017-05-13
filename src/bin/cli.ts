@@ -7,8 +7,9 @@ import * as yargs from 'yargs';
 import { listAllCommands, listCommand, runCommand } from '../lib/';
 import { MakfyError, RunError } from '../lib/errors';
 import { inheritedArgs, reservedArgNames } from '../lib/schema/args';
-
 import { errorMessageForObject, isObject, resetColors } from '../lib/utils';
+
+const entries = require('object.entries');
 
 const programName = 'makfy';
 const argv = yargs.argv;
@@ -150,7 +151,7 @@ const main = () => {
     delete commandArgs.$0;
 
     const inheritedArgValues = {};
-    for (const [ name, value ] of Object.entries(commandArgs)) {
+    for (const [ name, value ] of entries(commandArgs)) {
       if (inheritedArgs.includes(name)) {
         inheritedArgValues[name] = value;
       }
@@ -173,7 +174,9 @@ const main = () => {
     }
 
     execute = () => {
-      runCommand(fileExports.commands, commandName, commandArgs, options, {
+      runCommand(fileExports.commands, commandName, {
+        args: commandArgs,
+        options: options,
         internal: internal,
         inheritedArgs: inheritedArgValues,
         makfyFileAbsolutePath: fileToLoad.absoluteFilename,

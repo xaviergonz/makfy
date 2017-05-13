@@ -1,28 +1,28 @@
 import * as chalk from 'chalk';
 import { MakfyError, RunError } from './errors';
-import { MakfyInstance, SubRunContext } from './MakfyInstance';
-import { Options, parseOptions } from './options';
+import { MakfyInstance, RunContext } from './MakfyInstance';
+import { parseOptions } from './options';
 import { ParsedArgDefinition } from './parser/commandArg';
 import { parseCommands } from './parser/commands';
 import { Commands } from './schema/commands';
 import { errorMessageForObject, getTimeString, isObject, resetColors, TextWriter } from './utils';
 const prettyHrTime = require('pretty-hrtime');
+const entries = require('object.entries');
 
 const logWarn = (commandName: string, str: string) => {
   console.error(chalk.bold.blue(`@${commandName}`) + ' - ' + chalk.dim.red(`[WARN] ${str}`));
 };
 
-export const runCommand = (commands: Commands, commandName: string, commandArgs: object, options: Options | undefined, subRunContext: SubRunContext) => {
+export const runCommand = (commands: Commands, commandName: string, runContext: RunContext) => {
   if (!commandName) {
     throw new MakfyError('command name missing');
   }
 
-  let internal = false;
-  if (subRunContext) {
-    internal = subRunContext.internal;
-  }
+  const rc = { ...runContext };
+  rc.args = rc.args || {};
+  const {internal, args, options} = rc;
 
-  const fullOptions = parseOptions(options, false);
+  rc.options = parseOptions(options, false);
 
   const parsedCommands = parseCommands(commands, false);
   const parsedCommand = parsedCommands[commandName];
@@ -41,7 +41,7 @@ export const runCommand = (commands: Commands, commandName: string, commandArgs:
   const argDefs = parsedCommand.argDefinitions;
 
   // warn for ignored args
-  Object.keys(commandArgs).forEach((key) => {
+  Object.keys(args).forEach((key) => {
     const argDef = argDefs[key];
     if (!argDef) {
       logWarn(commandName, `argument '${key}' is not defined as a valid argument for this command and will be ignored`);
@@ -52,15 +52,16 @@ export const runCommand = (commands: Commands, commandName: string, commandArgs:
   const finalCommandArgs = {};
   Object.keys(argDefs).forEach((key) => {
     const argDef = argDefs[key];
-    finalCommandArgs[key] = argDef.parse(commandArgs[key]);
+    finalCommandArgs[key] = argDef.parse(args[key]);
   });
+  rc.args = finalCommandArgs;
 
   // run
   const startTime = process.hrtime();
 
-  const mf = new MakfyInstance(fullOptions, finalCommandArgs, subRunContext);
+  const mf = new MakfyInstance(rc);
   try {
-    commands[commandName].run(mf.exec, finalCommandArgs);
+    commands[commandName].run(mf.exec, rc.args);
   }
   catch (err) {
     if (!(err instanceof RunError) && !(err instanceof MakfyError)) {
@@ -99,7 +100,7 @@ export const listCommand = (commands: Commands, commandName: string, listArgumen
 
   const aw = new TextWriter();
   if (listArguments) {
-    const argDefsList: [string, ParsedArgDefinition][] = Object.entries(parsedCommand.argDefinitions);
+    const argDefsList: [string, ParsedArgDefinition][] = entries(parsedCommand.argDefinitions);
     // sort alphabetically
     argDefsList.sort((a, b) => {
       return a[0].toLowerCase().localeCompare(b[0].toLowerCase());
