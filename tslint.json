@@ -139,7 +139,7 @@
     ],
     "no-parameter-properties": false,
     "no-trailing-whitespace": false,
-    "no-unnecessary-initializer": true,
+    "no-unnecessary-initializer": false,
     "no-unnecessary-qualifier": true,
     "object-literal-key-quotes": [
       true,

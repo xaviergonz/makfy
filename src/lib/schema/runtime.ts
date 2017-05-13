@@ -1,4 +1,12 @@
 import { Command } from './commands';
 
-export type ExecCommand = string | (() => any) | Command;
-export type ExecFunction = (...commands: ExecCommand[]) => void;
+export interface ExecObject {
+  _: string | Command; // command name or actual command object
+  args?: {
+    [argName: string]: string | boolean;
+  };
+}
+
+export type ExecCommand = string | ExecObject;
+
+export type ExecFunction = (...commands: ExecCommand[]) => Promise<{ keepContext: ExecFunction }>;

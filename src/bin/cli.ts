@@ -4,7 +4,7 @@ import * as chalk from 'chalk';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as yargs from 'yargs';
-import { listAllCommands, listCommand, runCommand } from '../lib/';
+import { listAllCommands, listCommand, runCommandAsync } from '../lib/';
 import { MakfyError, RunError } from '../lib/errors';
 import { inheritedArgs, reservedArgNames } from '../lib/schema/args';
 import { errorMessageForObject, isObject, resetColors } from '../lib/utils';
@@ -91,7 +91,7 @@ const loadFile = (fileToLoad: FileToLoad) => {
   }
 };
 
-const main = () => {
+const mainAsync = async () => {
   resetColors();
 
   if (argv.help || argv.h) {
@@ -100,7 +100,7 @@ const main = () => {
     return;
   }
 
-  let execute;
+  let execute: () => Promise<void>;
   const internal = !!argv.internal;
 
   if (argv.list || argv.l) {
@@ -115,13 +115,13 @@ const main = () => {
         return;
       }
 
-      execute = () => {
+      execute = async () => {
         const output = chalk.dim.gray(`listing '${commandName}' command...\n\n`) + listCommand(fileExports.commands, commandName, true);
         console.log(output);
       };
     }
     else {
-      execute = () => {
+      execute = async () => {
         const output = chalk.dim.gray('listing all commands...\n\n') + listAllCommands(fileExports.commands, true);
         console.log(output);
       };
@@ -173,8 +173,8 @@ const main = () => {
       options.profile = true;
     }
 
-    execute = () => {
-      runCommand(fileExports.commands, commandName, {
+    execute = async () => {
+      await runCommandAsync(fileExports.commands, commandName, {
         args: commandArgs,
         options: options,
         internal: internal,
@@ -189,7 +189,7 @@ const main = () => {
   }
 
   try {
-    execute();
+    await execute();
   }
   catch (err) {
     resetColors();
@@ -209,4 +209,10 @@ const main = () => {
   }
 };
 
-main();
+try {
+  //noinspection JSIgnoredPromiseFromCall
+  mainAsync();
+}
+catch (err) {
+  throw err;
+}

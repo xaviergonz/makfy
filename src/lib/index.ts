@@ -13,7 +13,7 @@ const logWarn = (commandName: string, str: string) => {
   console.error(chalk.bold.blue(`@${commandName}`) + ' - ' + chalk.dim.red(`[WARN] ${str}`));
 };
 
-export const runCommand = (commands: Commands, commandName: string, runContext: RunContext) => {
+export const runCommandAsync = async (commands: Commands, commandName: string, runContext: RunContext) => {
   if (!commandName) {
     throw new MakfyError('command name missing');
   }
@@ -61,7 +61,7 @@ export const runCommand = (commands: Commands, commandName: string, runContext: 
 
   const mf = new MakfyInstance(rc);
   try {
-    commands[commandName].run(mf.exec, rc.args);
+    await commands[commandName].run(mf.exec, rc.args);
   }
   catch (err) {
     if (!(err instanceof RunError) && !(err instanceof MakfyError)) {

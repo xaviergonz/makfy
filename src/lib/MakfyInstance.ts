@@ -5,9 +5,12 @@ import * as path from 'path';
 import * as tmp from 'tmp';
 import { MakfyError, RunError } from './errors';
 import { Options } from './options';
+import { OutputBuffer } from './OutputBuffer';
 import { ExecCommand, ExecFunction } from './schema/runtime';
 import * as shellescape from './shellescape';
 import { getTimeString, objectToCommandLineArgs, resetColors } from './utils';
+import Socket = NodeJS.Socket;
+import Timer = NodeJS.Timer;
 
 const prettyHrTime = require('pretty-hrtime');
 
@@ -29,42 +32,73 @@ export interface RunContext {
   makfyFileAbsolutePath: string;
 }
 
+interface ExecContext {
+  id: string;
+  color: string;
+  cwd?: string;
+}
+
+const formatContextId = (context: ExecContext) => {
+  return chalk.dim[context.color](context.id + '/ ');
+};
+
+const contextIdColors = [
+  'magenta',
+  'blue',
+  'green',
+  'yellow',
+];
+
 export class MakfyInstance {
-  private readonly runContext: RunContext;
-  private cwd: string;
+  private static _lastId = 0;
+
+  private readonly _runContext: RunContext;
 
   constructor(runContext: RunContext) {
-    this.runContext = runContext;
+    this._runContext = runContext;
   }
 
-  exec: ExecFunction = (...commands: ExecCommand[]) => {
-    for (const command of commands) {
-      if (command === null || command === undefined) {
-        // skip
-      }
-      else if (typeof command === 'function') {
-        this._execFunction(command);
-      }
-      else if (typeof command === 'string') {
-        if (command.startsWith('?')) {
-          this._execHelpString(command);
+  exec: ExecFunction = async (...cmds: ExecCommand[]) => {
+    const id = MakfyInstance._lastId;
+    MakfyInstance._lastId++;
+    const context: ExecContext = {
+      id: String(id),
+      color: contextIdColors[id % contextIdColors.length],
+      cwd: undefined
+    };
+
+    const innerExec = async (...commands: ExecCommand[]) => {
+      for (let command of commands) {
+        if (command === null || command === undefined) {
+          // skip
         }
-        else if (command.startsWith('@')) {
-          this._execSubCommand(command);
-        }
-        else {
-          this._execCommandString(command, false);
+        else if (typeof command === 'string') {
+          command = command.trim();
+          if (command === '') {
+            // skip
+          }
+          else if (command.startsWith('?')) {
+            this._execHelpString(command, context);
+          }
+          else if (command.startsWith('@')) {
+            await this._execSubCommand(command, context);
+          }
+          else {
+            await this._execCommandString(command, false, context);
+          }
         }
       }
-    }
+
+      return {
+        keepContext: innerExec
+      };
+    };
+
+    return await innerExec(...cmds);
   }
 
-  private _execFunction = (command: () => any) => {
-    command();
-  }
-
-  private _execSubCommand = (command: string) => {
-    const runContext = this.runContext;
+  private _execSubCommandAsCommandLine = (command: string) => {
+    const runContext = this._runContext;
 
     const cmd = command.substr(1).trim();
     const commandName = cmd.split(' ')[0];
@@ -87,14 +121,18 @@ export class MakfyInstance {
     );
     fullCommand += cmd.substr(commandName.length);
 
-    this._execCommandString(fullCommand, true);
+    return fullCommand;
   }
 
-  private _execHelpString = (command: string) => {
-    console.log('\n' + getTimeString() + chalk.bgCyan.bold.white(`${command.substr(1).trim()}`));
+  private _execSubCommand = async (command: string, context: ExecContext) => {
+    await this._execCommandString(this._execSubCommandAsCommandLine(command), true, context);
   }
 
-  private _execCommandString = (command: string, internal: boolean) => {
+  private _execHelpString = (command: string, context: ExecContext) => {
+    console.log('\n' + formatContextId(context) + getTimeString() + chalk.bgCyan.bold.white(`${command.substr(1).trim()}`));
+  }
+
+  private _execCommandString = async (command: string, internal: boolean, context: ExecContext) => {
     // add node_modules/.bin to path
     const env = Object.assign({}, process.env, {
       [pathEnvName]: `${path.resolve(path.join('node_modules/.bin'))}${path.delimiter}${process.env[pathEnvName] || ''}`
@@ -114,58 +152,20 @@ export class MakfyInstance {
       }
 
       if (silentLevel <= 1) {
-        console.log(getTimeString() + chalk.dim.blue(`> ${command}`));
+        console.log(formatContextId(context) + getTimeString() + chalk.dim.blue(`> ${command}`));
       }
     }
 
     const printProfileTime = () => {
-      if (!internal && this.runContext.options.profile && silentLevel < 2) {
+      if (!internal && this._runContext.options.profile && silentLevel < 2) {
         const endTime = process.hrtime(startTime);
-        process.stdout.write(getTimeString() + chalk.dim.gray(`finished in ${chalk.dim.magenta(prettyHrTime(endTime))}`) + chalk.dim.blue(` > ${command}\n`));
+        process.stdout.write(formatContextId(context) + getTimeString() + chalk.dim.gray(`finished in ${chalk.dim.magenta(prettyHrTime(endTime))}`) + chalk.dim.blue(` > ${command}\n`));
       }
     };
 
-    // create a tmp file to save the current working dir
+    // get a tmp file to save the current working dir
     const tmpFilename = tmp.tmpNameSync({prefix: 'makfy-'});
-    const cwdName = getCwdName();
-
-    try {
-      resetColors();
-
-      let finalCommand = `${command} && ${cwdName} > ${escapeForShell(tmpFilename)}`;
-      if (this.cwd) {
-        finalCommand = `${getChdirName()} ${escapeForShell(this.cwd)} && ${finalCommand}`;
-      }
-
-      child_process.execSync(finalCommand, {
-        env: env,
-        shell: process.env.SHELL,
-        stdio: [process.stdin, silentLevel === 0 ? process.stdout : 'pipe', process.stderr]
-      });
-      printProfileTime();
-
-      // read the temp file with the new cwd
-      this.cwd = fs.readFileSync(tmpFilename, 'utf-8').replace(/\r?\n|\r/g, '').trim();
-    }
-    catch (result) {
-      printProfileTime();
-      const code = result.status;
-      let err1;
-
-      if (code !== undefined) {
-        err1 = `failed with code ${code}`;
-      }
-      else {
-        err1 = `failed with error ${result.message}`;
-      }
-
-      const err2 = `> ${command}`;
-      if (!internal) {
-        process.stderr.write(getTimeString() + chalk.bgRed.bold.white(err1) + chalk.blue(` ${err2}\n`));
-      }
-      throw new RunError(`${err1} ${err2}`);
-    }
-    finally {
+    const cleanup = () => {
       //noinspection EmptyCatchBlockJS
       try {
         fs.unlinkSync(tmpFilename);
@@ -174,6 +174,121 @@ export class MakfyInstance {
         // do nothing
       }
       resetColors();
+    };
+
+    const showAndGetError = (code: number | null, signal: string | null) => {
+      let err1;
+      if (code !== null) {
+        err1 = `failed with code ${code}`;
+      }
+      else {
+        err1 = `killed by signal ${signal}`;
+      }
+
+      const err2 = `> ${command}`;
+      if (!internal) {
+        process.stderr.write(formatContextId(context) + getTimeString() + chalk.bgRed.bold.white(err1) + chalk.blue(` ${err2}\n`));
+      }
+      return new RunError(`${err1} ${err2}`);
+    };
+
+    resetColors();
+
+    const cwdName = getCwdName();
+    let finalCommand = `${command} && ${cwdName} > ${escapeForShell(tmpFilename)}`;
+    if (context.cwd) {
+      finalCommand = `${getChdirName()} ${escapeForShell(context.cwd)} && ${finalCommand}`;
     }
+
+    return new Promise((resolve, reject) => {
+      const childProc = child_process.spawn(finalCommand, [], {
+        env: env,
+        shell: process.env.SHELL !== undefined ? process.env.SHELL : true,
+        stdio: [process.stdin, silentLevel === 0 ? 'pipe' : 'ignore', 'pipe']
+      });
+
+      let exitDone = false;
+
+      childProc.on('error', (err) => {
+        if (exitDone) return;
+        exitDone = true;
+
+        cleanup();
+        reject(new MakfyError(`shell could not be spawned - ${err.message}`));
+      });
+
+      const outputBuffer = new OutputBuffer(formatContextId(context), {
+        out: {
+          socket: process.stdout,
+          color: 'gray'
+        },
+        err: {
+          socket: process.stderr,
+          color: 'magenta'
+        }
+      });
+
+      // flush output every second
+      let flushInterval: Timer | undefined = setInterval(() => {
+        outputBuffer.flush();
+      }, 1000);
+
+      const finish = (error?: Error) => {
+        if (flushInterval) {
+          clearInterval(flushInterval);
+          flushInterval = undefined;
+        }
+        outputBuffer.flush();
+        console.log();
+        cleanup();
+        printProfileTime();
+
+        if (error) reject(error);
+        resolve();
+      };
+
+      childProc.on('close', (code, signal) => {
+        if (exitDone) return;
+        exitDone = true;
+
+        if (code !== null) {
+          if (code === 0) {
+            // standard exit
+
+            // read the temp file with the new cwd
+            context.cwd = fs.readFileSync(tmpFilename, 'utf-8').replace(/\r?\n|\r/g, '').trim();
+
+            finish();
+          }
+          else {
+            finish(showAndGetError(code, signal));
+          }
+        }
+        else {
+          // killed
+          finish(showAndGetError(code, signal));
+        }
+      });
+
+      if (childProc.stdout) {
+        childProc.stdout.on('data', (data: Buffer) => {
+          outputBuffer.write({
+            type: 'out',
+            data: data
+          });
+        });
+      }
+
+      if (childProc.stderr) {
+        childProc.stderr.on('data', (data: Buffer) => {
+          outputBuffer.write({
+            type: 'err',
+            data: data
+          });
+        });
+      }
+
+    });
+
   }
 }
