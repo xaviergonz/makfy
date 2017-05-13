@@ -88,7 +88,7 @@ const loadFile = (fileToLoad: FileToLoad) => {
     return fileExports;
   }
   catch (err) {
-    exitWithError(ErrCode.UserFileError, `error requiring ${filename}:\n${err.message}`);
+    exitWithError(ErrCode.UserFileError, `error requiring ${filename}:\n${err.stack.toString()}`);
   }
 };
 
