@@ -5,6 +5,6 @@ export interface ExecObject {
   };
 }
 
-export type ExecCommand = string | ExecObject;
+export type ExecCommand = string | ExecObject | any[]; // should be ExecCommand[], but that gives a circular type
 
 export type ExecFunction = (...commands: ExecCommand[]) => Promise<{ keepContext: ExecFunction }>;

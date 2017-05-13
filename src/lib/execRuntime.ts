@@ -31,6 +31,7 @@ export interface ExecContext {
 
   idStack: string[];
   cwd?: string;
+  syncMode: boolean;
 }
 
 const contextIdColors = [
@@ -45,23 +46,23 @@ const logWarn = (idStack: string[], showTime: boolean, str: string) => {
   console.error(formatContextIdStack(idStack, showTime) + chalk.dim.red(`[WARN] ${str}`));
 };
 
-export const runCommandAsync = async (commandName: string, commandArgs: object, execContext: ExecContext, unknownArgMeansError: boolean) => {
-  const { commands, parsedCommands } = execContext;
+export const runCommandAsync = async (commandName: string, commandArgs: object, baseContext: ExecContext, unknownArgMeansError: boolean) => {
+  const { commands, parsedCommands } = baseContext;
   const command = commands[commandName];
   const parsedCommand = parsedCommands[commandName];
   const argDefs = parsedCommand.argDefinitions;
 
-  const baseIdStack = [...execContext.idStack, chalk.dim.blue(commandName)];
+  const baseIdStack = [...baseContext.idStack, chalk.dim.blue(commandName)];
 
   // warn for ignored args
   Object.keys(commandArgs).forEach((key) => {
     const argDef = argDefs[key];
     if (!argDef) {
       if (unknownArgMeansError) {
-        throw new MakfyError(`argument '${key}' is not defined as a valid argument for command '${commandName}'`, execContext);
+        throw new MakfyError(`argument '${key}' is not defined as a valid argument for command '${commandName}'`, baseContext);
       }
       else {
-        logWarn(baseIdStack, execContext.options.showTime, `argument '${key}' is not defined as a valid argument for this command and will be ignored`);
+        logWarn(baseIdStack, baseContext.options.showTime, `argument '${key}' is not defined as a valid argument for this command and will be ignored`);
       }
     }
   });
@@ -73,32 +74,41 @@ export const runCommandAsync = async (commandName: string, commandArgs: object, 
     finalCommandArgs[key] = argDef.parse(commandArgs[key]);
   });
 
-  let lastId = 0;
-
-  const execFunc: ExecFunction = async (...execCommands: ExecCommand[]) => {
-    const id = String(lastId);
-    const color = contextIdColors[lastId % contextIdColors.length];
-    lastId++;
-    const newExecContext = {
-      ...execContext,
-      idStack: [...baseIdStack, chalk.dim[color](id)]
-    };
-
-    return await (createExecFunction(newExecContext)(...execCommands));
-  };
+  const execFunc = createExecFunctionContext(baseContext, baseIdStack, true);
 
   await command.run(execFunc, finalCommandArgs);
 };
 
 
-export const createExecFunction = (context: ExecContext): ExecFunction => {
+const createExecFunctionContext = (baseContext: ExecContext, baseIdStack: string[], syncMode: boolean): ExecFunction => {
+  let lastId = 0;
+
+  return async (...execCommands: ExecCommand[]) => {
+    const id = String(lastId);
+    const color = contextIdColors[lastId % contextIdColors.length];
+    lastId++;
+    const newExecContext = {
+      ...baseContext,
+      syncMode: syncMode,
+      idStack: [...baseIdStack, chalk.dim[color](id)]
+    };
+
+    return await (createExecFunction(newExecContext)(...execCommands));
+  };
+};
+
+
+const createExecFunction = (context: ExecContext): ExecFunction => {
   const innerExec = async (...commands: ExecCommand[]) => {
     for (let command of commands) {
       if (command === null || command === undefined) {
         // skip
       }
+      else if (Array.isArray(command)) {
+        await execArray(command, context, innerExec);
+      }
       else if (typeof command === 'object') {
-        await execObject(command, innerExec, context);
+        await execObject(command as ExecObject, context);
       }
       else if (typeof command === 'string') {
         command = command.trim();
@@ -123,7 +133,23 @@ export const createExecFunction = (context: ExecContext): ExecFunction => {
 };
 
 
-const execObject = async (command: ExecObject, execFunction: ExecFunction, context: ExecContext) => {
+const execArray = async (commands: ExecCommand[], baseContext: ExecContext, execFunction: ExecFunction) => {
+  if (baseContext.syncMode) {
+    // turning into parallel mode
+    const baseIdStack = [...baseContext.idStack];
+    const execFunc = createExecFunctionContext(baseContext, baseIdStack, false);
+    const all = commands.map((cmd) => execFunc(cmd));
+    await Promise.all(all);
+  }
+  else {
+    // turning into sync mode
+    await execFunction(...commands);
+  }
+
+};
+
+
+const execObject = async (command: ExecObject, context: ExecContext) => {
   const cmdName = command._;
   const args = command.args;
   let cmd: Command;
