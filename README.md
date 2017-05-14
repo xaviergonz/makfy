@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://cloud.githubusercontent.com/assets/6306796/26036064/363ea2ea-38d7-11e7-9f6e-867587e18fac.png">
+  <img src="https://cloud.githubusercontent.com/assets/6306796/26037402/2d80aa16-38f2-11e7-8bba-72e956921eb2.png">
   <p align="center">npm scripts on steroids!</p>
 </p>
 
