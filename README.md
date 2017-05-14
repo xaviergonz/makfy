@@ -261,8 +261,8 @@ In more detail:
      >  > An enum option where only ```values``` are valid, required if no ```byDefault``` is given (```--argName=string```)
      >
      > All of them accept a ```desc?: string``` property in case you want to add a given help string to them.
-   
-   
+
+
  ### ```options: {profile?, showTime?}```
  ```options``` is an optional object that can be exported to set the default of some options:
  * ```profile: boolean```
