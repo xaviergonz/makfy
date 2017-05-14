@@ -6,7 +6,8 @@
 [![npm version](https://badge.fury.io/js/makfy.svg)](https://badge.fury.io/js/makfy)
 
 
-Install it globally ```npm install -g makfy``` or locally ```npm install --save-dev makfy``` 
+Install it globally ```npm install -g makfy```  
+or locally ```npm install --save-dev makfy``` 
 
 ## What is makfy?
 
