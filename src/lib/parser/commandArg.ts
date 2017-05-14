@@ -118,14 +118,14 @@ const getHelpForArg = (argName: string, argDefinition: ArgDefinition) => {
   const getLeftHelp = (equals: string | undefined, required: boolean) => {
     let str = argNameToDashedArgName(argName);
     if (required) {
-      str = chalk.dim.red(str);
+      str = chalk.bold.red(str);
     }
     else {
-      str = chalk.dim.blue(str);
+      str = chalk.bold.magenta(str);
     }
 
     if (equals) {
-      str += chalk.dim.gray(`=${equals}`);
+      str += chalk.bold.gray(`=${equals}`);
     }
 
     return str;
@@ -134,10 +134,10 @@ const getHelpForArg = (argName: string, argDefinition: ArgDefinition) => {
   const getRightHelp = (equals: string | undefined, defaultValue: any) => {
     let str = '';
     if (desc) {
-      str = chalk.dim.gray(desc);
+      str = chalk.bold.gray(desc);
     }
     if (defaultValue) {
-      str += chalk.dim.gray(' (default: ' + chalk.dim.magenta(defaultValue) + ')');
+      str += chalk.bold.gray(' (default: ' + defaultValue + ')');
     }
 
     return str.length > 0 ? str : undefined;

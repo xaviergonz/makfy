@@ -19,7 +19,7 @@ export const isFunction = (func: any) => {
 
 export const getTimeString = (show: boolean) => {
   if (!show) return '';
-  return chalk.dim.gray(`[${new Date(new Date().getTime()).toLocaleTimeString()}] `);
+  return chalk.bold.gray(`[${new Date(new Date().getTime()).toLocaleTimeString()}] `);
 };
 
 export const errorMessageForObject = (parts: (string | undefined)[], message: string) => {
@@ -65,7 +65,7 @@ export const objectToCommandLineArgs = (obj: any) => {
 };
 
 export const formatContextIdStack = (idStack: string[], showTime: boolean) => {
-  return getTimeString(showTime) + idStack.join(chalk.dim.gray('/')) + '  ';
+  return getTimeString(showTime) + idStack.join(chalk.bold.gray('/')) + '  ';
 };
 
 export const formatContextId = (context: ExecContext) => {

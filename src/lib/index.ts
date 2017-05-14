@@ -106,7 +106,7 @@ export const listCommand = (commands: Commands, commandName: string, listArgumen
         const leftBracket = required ? '' : '[';
         const rightBracket = required ? '' : ']';
 
-        return chalk.dim.gray(` ${leftBracket}${leftHelp}${rightBracket}`);
+        return chalk.bold.gray(` ${leftBracket}${leftHelp}${rightBracket}`);
       };
 
       // find left help side max length
@@ -147,7 +147,7 @@ export const listCommand = (commands: Commands, commandName: string, listArgumen
 
   w.writeLine(title);
   if (command.desc !== undefined) {
-    w.writeLine(chalk.dim.gray(` - ${command.desc}`));
+    w.writeLine(chalk.bold.gray(` - ${command.desc}`));
   }
   w.write(aw.output);
   w.writeLine(chalk.reset(''));

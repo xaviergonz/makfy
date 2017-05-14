@@ -63,7 +63,7 @@ export class OutputBuffer {
       for (let i = 0; i < lines.length; i++) {
         let line = lines[i];
         if (color) {
-          line = chalk.dim[color](line);
+          line = chalk.bold[color](line);
         }
         if ((i === lines.length - 1 && chalk.stripColor(line).length <= 0) || (i === 0 && !lastEndedInNewLine)) {
           prefixedLines.push(line);

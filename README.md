@@ -1,7 +1,7 @@
 # makfy
 *npm scripts on steroids!*
 
-[![NPM version][npm-image]][npm-url] 
+[![npm version](https://badge.fury.io/js/makfy.svg)](https://badge.fury.io/js/makfy)
 
 
 Install it globally ```npm install -g makfy``` or locally ```npm install --save-dev makfy``` 
@@ -47,6 +47,9 @@ makfy tries to follow that KISS philosophy while adapting gracefully to complex 
 ## Samples
 
 A simple example 'makfyfile.js' (run with ```makfy clean```).
+
+**Note:** To use the async/await syntax you must install **node 7.6+**; if you can't then you can either use promises (though the syntax won't be as nice) or babelize/typescript compile the config file.
+
 ```js
 module.exports = {
   commands: {
@@ -56,7 +59,7 @@ module.exports = {
           // running sequentially
           'rimraf ./dist-a',
           'rimraf ./dist-b',
-          // and these run after the other ones but in parallel!
+          // and these run after the other ones too, but in parallel!
           [ 'rimraf ./dist-c', 'rimraf ./dist-d' ]
         );
       }
@@ -77,8 +80,8 @@ module.exports = {
       },
       run: async(exec, args) => {
         await exec(
-          args.prod ? './rimraf ./dist-prod' : null,
-          args.dev ? './rimraf ./dist-dev' : null
+          args.prod ? 'rimraf ./dist-prod' : null,
+          args.dev ? 'rimraf ./dist-dev' : null
         );
       }
     }

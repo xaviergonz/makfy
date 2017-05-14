@@ -18,8 +18,8 @@ import Timer = NodeJS.Timer;
 
 const prettyHrTime = require('pretty-hrtime');
 
-const pathEnvName = process.platform === 'win32' ? 'Path' : 'path';
 const getShellType = () => (process.env.SHELL ? 'sh' : 'cmd');
+const getPathEnvName = () => (getShellType() === 'sh' ? 'PATH' : 'Path');
 const getCwdName = () => (getShellType() === 'sh' ? 'pwd' : 'cd');
 const getChdirName = () => (getShellType() === 'sh' ? 'cd' : 'cd /d');
 const escapeForShell = (stringOrArray: string | string[]) => shellescape.escapePath(getShellType(), stringOrArray);
@@ -45,11 +45,11 @@ const contextIdColors = [
 ];
 
 const logWarn = (idStack: string[], showTime: boolean, str: string) => {
-  console.error(formatContextIdStack(idStack, showTime) + chalk.dim.red(`[WARN] ${str}`));
+  console.error(formatContextIdStack(idStack, showTime) + chalk.bold.red(`[WARN] ${str}`));
 };
 
 const logInfo = (idStack: string[], showTime: boolean, str: string) => {
-  console.log(formatContextIdStack(idStack, showTime) + chalk.dim.green(`${str}`));
+  console.log(formatContextIdStack(idStack, showTime) + chalk.bold.green(`${str}`));
 };
 
 export const runCommandAsync = async (commandName: string, commandArgs: object, baseContext: ExecContext, unknownArgMeansError: boolean) => {
@@ -58,7 +58,7 @@ export const runCommandAsync = async (commandName: string, commandArgs: object, 
   const parsedCommand = parsedCommands[commandName];
   const argDefs = parsedCommand.argDefinitions;
 
-  const baseIdStack = [...baseContext.idStack, chalk.dim.blue(commandName)];
+  const baseIdStack = [...baseContext.idStack, chalk.bold.blue(commandName)];
 
   const warn = (msg: string) => {
     logWarn(baseIdStack, baseContext.options.showTime, msg);
@@ -147,7 +147,7 @@ const createExecFunctionContext = (baseContext: ExecContext, baseIdStack: string
     const newExecContext = {
       ...baseContext,
       syncMode: syncMode,
-      idStack: [...baseIdStack, chalk.dim[color](id)]
+      idStack: [...baseIdStack, chalk.bold[color](id)]
     };
 
     return await (createExecFunction(newExecContext)(...execCommands));
@@ -239,6 +239,7 @@ const execHelpString = (command: string, context: ExecContext) => {
 
 const execCommandString = async (command: string, context: ExecContext) => {
   // add node_modules/.bin to path
+  const pathEnvName = getPathEnvName();
   const env = Object.assign({}, process.env, {
     [pathEnvName]: `${path.resolve(path.join('node_modules/.bin'))}${path.delimiter}${process.env[pathEnvName] || ''}`
   });
@@ -259,7 +260,7 @@ const execCommandString = async (command: string, context: ExecContext) => {
     if (context.options.profile && silentLevel < 2) {
       const endTime = process.hrtime(startTime);
       outputBuffer.writeString('out',
-        chalk.dim.gray(`finished in ${chalk.dim.magenta(prettyHrTime(endTime))}`) + chalk.dim.blue(` > ${command}`) + '\n');
+        chalk.bold.gray(`finished in ${chalk.bold.magenta(prettyHrTime(endTime))} `) + chalk.bold.gray(`> ${command}`) + '\n');
     }
   };
 
@@ -286,7 +287,7 @@ const execCommandString = async (command: string, context: ExecContext) => {
     }
 
     const err2 = `> ${command}`;
-    outputBuffer.writeString('err', chalk.bgRed.bold.white(err1) + chalk.blue(` ${err2}\n`));
+    outputBuffer.writeString('err', chalk.bgRed.bold.white(err1) + chalk.bold.red(` ${err2}\n`));
     return new RunError(`${err1} ${err2}`, context);
   };
 
@@ -310,7 +311,7 @@ const execCommandString = async (command: string, context: ExecContext) => {
     });
 
     if (silentLevel <= 1) {
-      outputBuffer.writeString('out', chalk.dim.blue(`> ${command}`) + '\n');
+      outputBuffer.writeString('out', chalk.bgYellow.bold.white(`> ${command}`) + '\n');
     }
 
     const childProc = child_process.spawn(finalCommand, [], {

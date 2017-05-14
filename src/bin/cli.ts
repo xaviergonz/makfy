@@ -24,7 +24,7 @@ const enum ErrCode {
 const exitWithError = (code: ErrCode, message?: string, prefix?: string) => {
   resetColors();
   if (message) {
-    console.error((prefix ? prefix : '') + chalk.dim.red('[ERROR] ' + message));
+    console.error((prefix ? prefix : '') + chalk.bold.red('[ERROR] ' + message));
   }
   process.exit(code);
 };
@@ -33,7 +33,7 @@ const defaultFilename = programName + 'file.js';
 const version = require('../../package.json').version;
 
 const printProgramHelp = () => {
-  console.log(chalk.dim.blue(`${programName} v${version}`));
+  console.log(`${programName} v${version}`);
   console.log();
   console.log(`usage:`);
 
@@ -46,8 +46,8 @@ const printProgramHelp = () => {
   };
 
   const logHelp1 = (what: string, how: string, showFile: boolean) => {
-    const left = pad(chalk.dim.green(` - ${what}`));
-    const right = `${programName} ${showFile ? `[-f ${defaultFilename}] ` : ''}${chalk.dim.magenta(how)}`;
+    const left = pad(chalk.bold.green(` - ${what}`));
+    const right = chalk.bold.gray(`${programName} ${showFile ? chalk.bold.magenta(`[-f ${defaultFilename}] `) : ''}${chalk.bold.magenta(how)}`);
     console.log(left + right);
   };
 
@@ -57,8 +57,8 @@ const printProgramHelp = () => {
   logHelp1('show help (this):', `[--help]`, false);
 
   const logArgHelp = (argName: string, desc: string) => {
-    const left = pad(' ' + chalk.dim.gray(`[${chalk.dim.blue(argName)}]`));
-    console.log(left + desc);
+    const left = pad(' ' + chalk.bold.gray(`[${chalk.bold.magenta(argName)}]`));
+    console.log(left + chalk.bold.gray(desc));
 
   };
 
@@ -84,7 +84,7 @@ const getFileToLoad = (): FileToLoad => {
     exitWithError(ErrCode.CliError, `command file '${filename}' not found`);
   }
 
-  console.log(chalk.dim.gray(`using command file '${chalk.dim.magenta(filename)}'...`));
+  console.log(chalk.bold.gray(`using command file '${chalk.bold.magenta(filename)}'...`));
 
   const absoluteFilename = path.resolve(filename);
 
@@ -136,13 +136,13 @@ const mainAsync = async () => {
       }
 
       execute = async () => {
-        const output = chalk.dim.gray(`listing '${commandName}' command...\n\n`) + listCommand(fileExports.commands, commandName, true);
+        const output = chalk.bold.gray(`listing '${commandName}' command...\n\n`) + listCommand(fileExports.commands, commandName, true);
         console.log(output);
       };
     }
     else {
       execute = async () => {
-        const output = chalk.dim.gray('listing all commands...\n\n') + listAllCommands(fileExports.commands, true);
+        const output = chalk.bold.gray('listing all commands...\n\n') + listAllCommands(fileExports.commands, true);
         console.log(output);
       };
     }
