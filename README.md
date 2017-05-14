@@ -44,9 +44,9 @@ makfy tries to follow that KISS philosophy while adapting gracefully to complex 
   So it is easy to spot where your build is currently at and/or where it failed.
 
 
-## Samples
+## Sample ```makfyfile.js``` files
 
-A simple example 'makfyfile.js' (run with ```makfy clean```).
+A simple example (run with ```makfy clean```).
 
 **Note:** To use the async/await syntax you must install **node 7.6+**; if you can't then you can either use promises (though the syntax won't be as nice) or babelize/typescript compile the config file.
 
