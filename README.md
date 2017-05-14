@@ -1,5 +1,7 @@
-# makfy
-*npm scripts on steroids!*
+<p align="center">
+  <img src="https://cloud.githubusercontent.com/assets/6306796/26036064/363ea2ea-38d7-11e7-9f6e-867587e18fac.png">
+  <p align="center">npm scripts on steroids!</p>
+</p>
 
 [![npm version](https://badge.fury.io/js/makfy.svg)](https://badge.fury.io/js/makfy)
 
