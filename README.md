@@ -180,17 +180,18 @@ module.exports = {
 ```
 
 In more detail:
+
 ### ```commands: { [commandName]: Command }```
 ```commands``` is an object with alphanumeric keys, which are the command names.
  
 #### ```Command: { run, desc?, args? }```
-  * ##### ```run: async(exec, args, utils) => Promise<void>```
+  * **```run: async(exec, args, utils) => Promise<void>```**
     > An async function that takes three arguments, ```exec```, ```args``` and ```utils```.
     >    
-    > * ###### ```exec: async(...commands: ExecCommand[]) => Promise<void>```
+    > * **```exec: async(...commands: ExecCommand[]) => Promise<void>```**
     >   > A function that allows you to run ```ExecCommand```(s) sequentially, which can be:
     >   >
-    >   > * ###### shell string (e.g. ```'npm install'```) - ```string```       
+    >   > * **shell string (e.g. ```'npm install'```) - ```string```**
     >   >   >  It will run the given command in the shell.
     >   >   >
     >   >   >  If the string starts with ```%``` then stdout will be silenced, 
@@ -198,17 +199,17 @@ In more detail:
     >   >   >
     >   >   >  Note that stderr is never silenced, so errors/warnings will always be shown.
     >   >
-    >   > * ###### help string (e.g. ```'? installing packages'```) - ```string``` 
+    >   > * **help string (e.g. ```'? installing packages'```) - ```string```**
     >   >   > It will print that help to the console, useful to keep track of what your build is doing.
     >   >
-    >   > * ###### command invocation object - ```{ _: 'commandName', args?: object }```
+    >   > * **command invocation object - ```{ _: 'commandName', args?: object }```**
     >   >   > It will run another command inside the current command, optionally passing it the given arguments if desired.         
     >   >   >
     >   >   > A simpler way to invoke sub-commands (if arguments are not needed) is using the string ```'@commandName'```.
     >   >   >
     >   >   > Note that the arguments are validated automatically for you as they would if they were coming from the command line directly.
     >   >
-    >   > * ###### exec-command array (e.g. ```[ 'npm install', '@clean' ]```) - ```ExecCommand[]```
+    >   > * **exec-command array (e.g. ```[ 'npm install', '@clean' ]```) - ```ExecCommand[]```**
     >   >   >   It will run whatever is inside but in parallel instead of sequentially. If an array is used inside another array then it will go back to run sequentially.
     >   >   >  
     >   >   > This should allow you to create complex sequential/parallel executions such as:
@@ -227,35 +228,35 @@ In more detail:
     >   >   >      
     >   >   >   Of course even more complex scenarios are supported since ```exec(...)``` basically returns an awaitable Promise.
     >
-    > * ###### ```args: object```
+    > * **```args: object```**
     >   > An object where each property is the argument value as coming from the command line or exec sub-command invocation.
     >
-    > * ###### ```utils: object```
+    > * **```utils: object```**
     >   > An object with nifty utility methods:
     >   > 
-    >   >  * ###### ```filesChanged: async([gobPatterns: string[] | string], log = true) => Promise<boolean>```
+    >   >  * **```filesChanged: async([gobPatterns: string[] | string], log = true) => Promise<boolean>```**
     >   >    > Returns true if any of the files represented from the union of all gob pattern(s) changed. Useful for example if you don't need to rerun the babel if none of the sources changed.
     >   >    >
     >   >    > Note that this function will create files inside a ```.makfy-cache``` folder.      
-    >   >  * ###### ```cleanCacheSync: () => void```
+    >   >  * **```cleanCacheSync: () => void```**
     >   >    > Cleans the ```.makfy-cache``` folder. Use it if you want to make sure all next calls to ```filesChanged``` will be true.
 
-   * #### ```desc?: string```
+   * **```desc?: string```**
      > An optional property that defines what the command does so it is shown when using ```makfy --list```.
  
-   * #### ```args?: { [argName]: ArgDefinition }```
+   * **```args?: { [argName]: ArgDefinition }```**
      > An optional object of argument definitions that can be passed to that command using ```makfy commandName ...args``` and that will be automatically validated.
      > 
      > An ```ArgDefinition``` can be:
-     > * ###### Flag option - ```{ type: 'flag' }```
+     > * **Flag option - ```{ type: 'flag' }```**
      >
      >  > An optional flag, false by default unless you use ```--argName```
      >
-     > * ###### String option - ```{ type: 'string', byDefault?: string }```
+     > * **String option - ```{ type: 'string', byDefault?: string }```**
      >
      >  > A string option, required if no ```byDefault``` is given (```--argName=string```, use quotes if it has to have spaces)
      >
-     > * ###### Enum option - ```{ type: 'enum', values: string[], byDefault?: string }```
+     > * **Enum option - ```{ type: 'enum', values: string[], byDefault?: string }```**
      >
      >  > An enum option where only ```values``` are valid, required if no ```byDefault``` is given (```--argName=string```)
      >
