@@ -1,6 +1,6 @@
 {
   "name": "makfy",
-  "version": "1.0.11",
+  "version": "1.0.12",
   "description": "makfy - npm scripts on steroids!",
   "main": "dist/lib/index.js",
   "bin": {
