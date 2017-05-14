@@ -176,7 +176,8 @@ module.exports = {
       desc?: string,
       args?: {
         [argName]: ArgDefinition
-      }
+      },
+      internal?: boolean
     }   
   },
   options?: Options
@@ -268,6 +269,8 @@ In more detail:
      >
      > All of them accept a ```desc?: string``` property in case you want to add a given help string to them.
 
+   * **```internal?: boolean```**
+     > An optional boolean that indicates that it is an internal command, that is, it should not be shown when listing and cannot be invoked directly from the command line (default: ```false```).
 
  ### ```options: {profile?, showTime?}```
  ```options``` is an optional object that can be exported to set the default of some options:
