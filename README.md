@@ -238,6 +238,8 @@ In more detail:
     > * **```utils: object```**
     >   > An object with nifty utility methods:
     >   > 
+    >   >  * **```escape: (...parts: string[]) => string```**
+    >   >    > Escapes all parts of a given shell command (e.g. ```['hello', 'to this world']``` will return under cmd ```hello "to this world"``` and under other shells ```hello 'to this world'```)
     >   >  * **```filesChanged: async([gobPatterns: string[] | string], log = true) => Promise<boolean>```**
     >   >    > Returns true if any of the files represented from the union of all gob pattern(s) changed. Useful for example if you don't need to rerun the babel if none of the sources changed.
     >   >    >

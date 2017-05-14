@@ -148,6 +148,9 @@ export const runCommandAsync = async (commandName: string, commandArgs: object, 
 
       const cf = path.join('.', cacheFolderName);
       deleteFolderRecursive(cf);
+    },
+    escape(...parts) {
+      return shellescape.escapePath(getShellType(), [...parts]);
     }
   };
 

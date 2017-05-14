@@ -12,4 +12,5 @@ export type ExecFunction = (...commands: ExecCommand[]) => Promise<{ keepContext
 export interface ExecUtils {
   filesChanged(globPatterns: string[] | string, logResult?: boolean): Promise<boolean>;
   cleanCacheSync(): void;
+  escape(...parts: string[]): string;
 }
