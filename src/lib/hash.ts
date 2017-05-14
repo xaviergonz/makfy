@@ -18,7 +18,7 @@ export interface HashCollection {
   hashes: Hashes;
 }
 
-const cacheFolderName = '.makfy-cache';
+export const cacheFolderName = '.makfy-cache';
 
 export const generateHashEntryAsync = async (filePath: string, hashType: HashType, onlySize: boolean): Promise<HashEntry> => {
   const stat = fs.statSync(filePath);

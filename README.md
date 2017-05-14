@@ -231,10 +231,14 @@ In more detail:
     >   > An object where each property is the argument value as coming from the command line or exec sub-command invocation.
     >
     > * ###### ```utils: object```
-    >   > An object with nifty util methods:
+    >   > An object with nifty utility methods:
     >   > 
     >   >  * ###### ```filesChanged: async([gobPatterns: string[] | string], log = true) => Promise<boolean>```
     >   >    > Returns true if any of the files represented from the union of all gob pattern(s) changed. Useful for example if you don't need to rerun the babel if none of the sources changed.
+    >   >    >
+    >   >    > Note that this function will create files inside a ```.makfy-cache``` folder.      
+    >   >  * ###### ```cleanCacheSync: () => void```
+    >   >    > Cleans the ```.makfy-cache``` folder. Use it if you want to make sure all next calls to ```filesChanged``` will be true.
 
    * #### ```desc?: string```
      > An optional property that defines what the command does so it is shown when using ```makfy --list```.

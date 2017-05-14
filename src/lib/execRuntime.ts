@@ -4,7 +4,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as tmp from 'tmp';
 import { MakfyError, RunError } from './errors';
-import { checkHashCollectionMatchesAsync, createCacheFolder, getHashCollectionFilename, loadHashCollectionFileAsync, saveHashCollectionFileAsync } from './hash';
+import { cacheFolderName, checkHashCollectionMatchesAsync, createCacheFolder, getHashCollectionFilename, loadHashCollectionFileAsync, saveHashCollectionFileAsync } from './hash';
 import { OutputBuffer } from './OutputBuffer';
 import { ParsedCommand } from './parser/command';
 import { ParsedCommands } from './parser/commands';
@@ -130,6 +130,24 @@ export const runCommandAsync = async (commandName: string, commandArgs: object, 
         }
         return false;
       }
+    },
+    cleanCacheSync() {
+      const deleteFolderRecursive = (dir: string) => {
+        if (!fs.existsSync(dir)) return;
+
+        fs.readdirSync(dir).forEach((file) => {
+          const curPath = path.join(dir, file);
+          if (fs.lstatSync(curPath).isDirectory()) { // recurse
+            deleteFolderRecursive(curPath);
+          } else { // delete file
+            fs.unlinkSync(curPath);
+          }
+        });
+        fs.rmdirSync(dir);
+      };
+
+      const cf = path.join('.', cacheFolderName);
+      deleteFolderRecursive(cf);
     }
   };
 
