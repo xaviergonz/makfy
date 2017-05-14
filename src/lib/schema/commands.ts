@@ -5,11 +5,10 @@ import { ExecFunction, ExecUtils } from './runtime';
 
 export interface Command {
   desc?: string;
-  args: {
+  args?: {
     [argName: string]: ArgDefinition;
   };
   internal?: boolean;
-  skipIfSame: string[];
   run(exec: ExecFunction, args: object, utils: ExecUtils): void;
 }
 
