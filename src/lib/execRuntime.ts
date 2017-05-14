@@ -91,7 +91,7 @@ export const runCommandAsync = async (commandName: string, commandArgs: object, 
   const execFunc = createExecFunctionContext(baseContext, baseIdStack, true);
 
   const utils: ExecUtils = {
-    filesChanged: async (gobPatterns, logResult = true) => {
+    filesChanged: async (gobPatterns, contextName = 'default', logResult = true) => {
       if (typeof gobPatterns === 'string') {
         gobPatterns = [ gobPatterns ];
       }
@@ -105,7 +105,7 @@ export const runCommandAsync = async (commandName: string, commandArgs: object, 
       const files = await unrollGlobPatternsAsync(gobPatterns);
 
       createCacheFolder();
-      const hashFilename = getHashCollectionFilename(baseContext.makfyFilename, gobPatterns, 'sha1');
+      const hashFilename = getHashCollectionFilename(baseContext.makfyFilename, gobPatterns, contextName, 'sha1');
 
       let oldHashCollection;
       //noinspection EmptyCatchBlockJS

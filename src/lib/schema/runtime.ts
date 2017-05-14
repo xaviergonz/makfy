@@ -10,7 +10,7 @@ export type ExecCommand = string | ExecObject | any[]; // should be ExecCommand[
 export type ExecFunction = (...commands: ExecCommand[]) => Promise<{ keepContext: ExecFunction }>;
 
 export interface ExecUtils {
-  filesChanged(globPatterns: string[] | string, logResult?: boolean): Promise<boolean>;
+  filesChanged(globPatterns: string[] | string, contextName?: string, logResult?: boolean): Promise<boolean>;
   cleanCacheSync(): void;
   escape(...parts: string[]): string;
 }
