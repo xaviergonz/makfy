@@ -26,13 +26,13 @@ makfy tries to follow that KISS philosophy while adapting gracefully to complex 
 
 #### What does it add?
 * **Javascript powered**  
-  The config file is a javascript file, so you can use it to decide how the shell commands should run or when.
+  ```makfyfile.js``` is a javascript file, so you can use it to decide how the shell commands should run or when.
   
 * **Easy argument definition**  
   It is easy to create command line arguments for each command, plus validation is made automatically.
   
 * **Command line help auto-generation**  
-  So you don't have to dig into the config file to know what each command does.
+  So you don't have to dig into config files to know what each command does.
 
 * **Concurrency made easy**  
   Thanks to async/await plus some nifty tricks (and concurrent logs look good!).
@@ -40,7 +40,7 @@ makfy tries to follow that KISS philosophy while adapting gracefully to complex 
 * **Utils included**  
   Such as a source file checker so shell commands are not run twice is not needed.
   
-* **Strong validation of config files**  
+* **Strong validation of ```makfyfile.js``` files**  
   You should not be left wondering if you mistyped something.
   
 * **Colorized detailed logs**  
@@ -51,7 +51,7 @@ makfy tries to follow that KISS philosophy while adapting gracefully to complex 
 
 A simple example (run with ```makfy clean```).
 
-**Note:** To use the async/await syntax you must install **node 7.6+**; if you can't then you can either use promises (though the syntax won't be as nice) or babelize/typescript compile the config file.
+**Note:** To use the async/await syntax you must install **node 7.6+**; if you can't then you can either use promises (though the syntax won't be as nice) or babelize/typescript compile the ```makfyfile.js``` file.
 
 ```js
 module.exports = {
