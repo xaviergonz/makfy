@@ -30,6 +30,7 @@ export interface ExecContext {
   parsedCommands: ParsedCommands;
   options: FullOptions;
   makfyFilename: string;
+  makfyFileContents?: string;
 
   idStack: string[];
   cwd?: string;
@@ -105,7 +106,7 @@ export const runCommandAsync = async (commandName: string, commandArgs: object, 
       const files = await unrollGlobPatternsAsync(gobPatterns);
 
       createCacheFolder();
-      const hashFilename = getHashCollectionFilename(baseContext.makfyFilename, gobPatterns, contextName, 'sha1');
+      const hashFilename = getHashCollectionFilename(baseContext.makfyFileContents || baseContext.makfyFilename, gobPatterns, contextName, 'sha1');
 
       let oldHashCollection;
       //noinspection EmptyCatchBlockJS
@@ -119,14 +120,14 @@ export const runCommandAsync = async (commandName: string, commandArgs: object, 
       const newHashCollection = await checkHashCollectionMatchesAsync(oldHashCollection, files, 'sha1');
       if (newHashCollection) {
         if (logResult) {
-          info(`hash of ${files.length} files did not match`);
+          info(`hash of ${files.length} file(s) did not match`);
         }
         await saveHashCollectionFileAsync(hashFilename, newHashCollection);
         return true;
       }
       else {
         if (logResult) {
-          info(`hash of ${files.length} files matched`);
+          info(`hash of ${files.length} file(s) matched`);
         }
         return false;
       }
@@ -254,7 +255,7 @@ const execObject = async (command: ExecObject, context: ExecContext) => {
 
 
 const execHelpString = (command: string, context: ExecContext) => {
-  console.log('\n' + formatContextId(context) + chalk.bgCyan.bold.white(`${command.substr(1).trim()}`));
+  console.log('\n' + formatContextId(context) + chalk.bgBlue.bold.white(`${command.substr(1).trim()}`));
 };
 
 
@@ -332,7 +333,7 @@ const execCommandString = async (command: string, context: ExecContext) => {
     });
 
     if (silentLevel <= 1) {
-      outputBuffer.writeString('out', chalk.bgYellow.bold.white(`> ${command}`) + '\n');
+      outputBuffer.writeString('out', chalk.bgBlue.bold.white(`> ${command}`) + '\n');
     }
 
     const childProc = child_process.spawn(finalCommand, [], {

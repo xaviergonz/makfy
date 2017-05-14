@@ -8,6 +8,8 @@ import { listAllCommands, listCommand, runCommandAsync } from '../lib/';
 import { MakfyError, RunError } from '../lib/errors';
 import { alphanumericPattern } from '../lib/schema';
 import { reservedArgNames } from '../lib/schema/args';
+import { Commands } from '../lib/schema/commands';
+import { PartialOptions } from '../lib/schema/options';
 import { errorMessageForObject, formatContextId, isObject, resetColors } from '../lib/utils';
 
 const entries = require('object.entries');
@@ -94,7 +96,15 @@ const getFileToLoad = (): FileToLoad => {
   };
 };
 
-const loadFile = (fileToLoad: FileToLoad) => {
+interface LoadFileResult {
+  exports: {
+    commands: Commands;
+    options?: PartialOptions;
+  };
+  contents?: string;
+}
+
+const loadFile = (fileToLoad: FileToLoad, loadContents: boolean): LoadFileResult | undefined => {
   const {filename, absoluteFilename} = fileToLoad;
 
   // try to load the user file
@@ -103,12 +113,17 @@ const loadFile = (fileToLoad: FileToLoad) => {
 
     if (!isObject(fileExports)) {
       exitWithError(ErrCode.UserFileError, `module.exports inside '${filename}' is not an object`);
+      return;
     }
 
-    return fileExports;
+    return {
+      exports: fileExports,
+      contents: loadContents ? fs.readFileSync(absoluteFilename, 'utf-8') : undefined
+    };
   }
   catch (err) {
     exitWithError(ErrCode.UserFileError, `error requiring ${filename}:\n${err.stack.toString()}`);
+    return;
   }
 };
 
@@ -126,7 +141,7 @@ const mainAsync = async () => {
   if (argv.list || argv.l) {
     // list
     const fileToLoad = getFileToLoad();
-    const fileExports = loadFile(fileToLoad);
+    const { exports } = loadFile(fileToLoad, false)!;
 
     const commandName = argv._.length > 0 ? argv._[0].trim() : undefined;
     if (commandName) {
@@ -136,13 +151,13 @@ const mainAsync = async () => {
       }
 
       execute = async () => {
-        const output = chalk.bold.gray(`listing '${commandName}' command...\n\n`) + listCommand(fileExports.commands, commandName, true);
+        const output = chalk.bold.gray(`listing '${commandName}' command...\n\n`) + listCommand(exports.commands, commandName, true);
         console.log(output);
       };
     }
     else {
       execute = async () => {
-        const output = chalk.bold.gray('listing all commands...\n\n') + listAllCommands(fileExports.commands, true);
+        const output = chalk.bold.gray('listing all commands...\n\n') + listAllCommands(exports.commands, true);
         console.log(output);
       };
     }
@@ -161,7 +176,7 @@ const mainAsync = async () => {
     }
 
     const fileToLoad = getFileToLoad();
-    const fileExports = loadFile(fileToLoad);
+    const { exports, contents } = loadFile(fileToLoad, true)!;
 
     const commandName = argv._[0].trim();
 
@@ -181,7 +196,7 @@ const mainAsync = async () => {
       }
     }
 
-    let options = fileExports.options;
+    let options = exports.options;
     if (options === undefined) {
       options = {};
     }
@@ -199,7 +214,8 @@ const mainAsync = async () => {
     execute = async () => {
       await runCommandAsync({
         makfyFilename: fileToLoad.filename,
-        commands: fileExports.commands,
+        makfyFileContents: contents,
+        commands: exports.commands,
         commandName: commandName,
         commandArgs: commandArgs,
         options: options

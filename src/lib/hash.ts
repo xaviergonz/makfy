@@ -1,7 +1,6 @@
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
-import { alphanumericPattern } from './schema';
 
 export type HashType = 'sha1';
 
@@ -150,17 +149,13 @@ export const saveHashCollectionFileAsync = async (hashFilePath: string, hashColl
   });
 };
 
-export const getHashCollectionFilename = (scriptName: string, gobPatterns: string[], contextName: string, hashType: HashType) => {
+export const getHashCollectionFilename = (scriptContents: string, gobPatterns: string[], contextName: string, hashType: HashType) => {
   gobPatterns = gobPatterns.map((e) => e.trim()).filter((e) => e.length > 0);
   gobPatterns.sort();
   const json = JSON.stringify(gobPatterns);
-  const hash = crypto.createHash(hashType).update(json).digest('hex');
+  const hash = crypto.createHash(hashType).update(scriptContents + contextName + json).digest('hex');
 
-  if (!new RegExp(alphanumericPattern).test(contextName)) {
-    throw new Error('contextName must be alphanumerical and not empty');
-  }
-
-  return path.join(cacheFolderName, `${scriptName}-${contextName}-${hash}.hash`);
+  return path.join(cacheFolderName, `${hash}.hash`);
 };
 
 export const createCacheFolder = () => {

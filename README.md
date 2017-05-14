@@ -242,11 +242,13 @@ In more detail:
     >   >  * **```escape: (...parts: string[]) => string```**
     >   >    > Escapes all parts of a given shell command (e.g. ```escape('hello', 'to this world')``` will return under cmd ```hello "to this world"``` and under other shells ```hello 'to this world'```)
     >   >  * **```filesChanged: async([gobPatterns: string[] | string], contextName = 'default', log = true) => Promise<boolean>```**
-    >   >    > Returns true if any of the files represented from the union of all gob pattern(s) changed. Useful for example if you don't need to rerun the babel if none of the sources changed.
+    >   >    > Returns true if any of the files represented from the union of all gob pattern(s) changed. Useful for example if you don't need to rerun the babel if none of the sources changed.    
     >   >    >
-    >   >    > **Note:** If you generate two different targets based on the same source files (for example a production vs a debug bundle) make sure to use different context names for each one.
-    >   >    >
-    >   >    > Note that this function will create files inside a ```.makfy-cache``` folder.      
+    >   >    > **Notes:**
+    >   >    > - If you generate two different targets based on the same source files (for example a production vs a debug bundle) make sure to use different context names for each one.
+    >   >    > - This function will create files inside a ```.makfy-cache``` folder.
+    >   >    > - The cache will be reset if your ```makfyfile.js``` contents change. This is done so you don't have to manually clean the cache folder every time you make changes to the build system.
+     
     >   >  * **```cleanCacheSync: () => void```**
     >   >    > Cleans the ```.makfy-cache``` folder. Use it if you want to make sure all next calls to ```filesChanged``` will be true.
 

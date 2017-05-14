@@ -16,11 +16,12 @@ export interface RunCommandOptions {
   commandName: string;
   commandArgs: object | undefined;
   makfyFilename: string;
+  makfyFileContents?: string;
   options: PartialOptions | undefined;
 }
 
 export const runCommandAsync = async (runCommandOptions: RunCommandOptions) => {
-  const {commands, commandName, commandArgs, options, makfyFilename} = runCommandOptions;
+  const {commands, commandName, commandArgs, options, makfyFilename, makfyFileContents} = runCommandOptions;
 
   if (!commandName) {
     throw new MakfyError('command name missing', undefined);
@@ -48,6 +49,7 @@ export const runCommandAsync = async (runCommandOptions: RunCommandOptions) => {
     commands: commands,
     parsedCommands: parsedCommands,
     makfyFilename: makfyFilename,
+    makfyFileContents: makfyFileContents,
     options: parsedOptions,
     syncMode: true,
     idStack: [],
@@ -67,7 +69,7 @@ export const runCommandAsync = async (runCommandOptions: RunCommandOptions) => {
   }
 
   const endTime = process.hrtime(startTime);
-  console.log('\n' + getTimeString(parsedOptions.showTime) + chalk.bgGreen.bold.white(`'${commandName}' done in ${prettyHrTime(endTime)}`));
+  console.log('\n' + getTimeString(parsedOptions.showTime) + chalk.bold.green(`'${commandName}' done in ${prettyHrTime(endTime)}`));
   resetColors();
 };
 
