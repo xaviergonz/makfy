@@ -16,24 +16,31 @@ makfy tries to follow that KISS philosophy while adapting gracefully to complex 
   
 #### What does it inherit from npm scripts?
 
-- It is still **shell-based** in its core.
-- The gazillion CLI tools available in npm (*browserify, rimraf, webpack...*) are still available for you to use.    
+* It is still **shell-based** in its core.
+
+* The gazillion CLI tools available in npm (*browserify, rimraf, webpack...*) are still available for you to use.    
   In other words, if there's a CLI version of it available nothing else is needed to use it with makfy.
 
 #### What does it add?
-* ###### Javascript powered
+* **Javascript powered**  
   The config file is a javascript file, so you can use it to decide how the shell commands should run or when.
-* ###### Easy argument definition
+  
+* **Easy argument definition**  
   It is easy to create command line arguments for each command, plus validation is made automatically.
-* ###### Command line help auto-generation
+  
+* **Command line help auto-generation**  
   So you don't have to dig into the config file to know what each command does.
-* ######Concurrency made easy
+
+* **Concurrency made easy**  
   Thanks to async/await plus some nifty tricks (and concurrent logs look good!).
-* ######Utils included
+  
+* **Utils included**  
   Such as a source file checker so shell commands are not run twice is not needed.
-* ######Strong validation of config files
+  
+* **Strong validation of config files**  
   You should not be left wondering if you mistyped something.
-* ######Colorized detailed logs
+  
+* **Colorized detailed logs**  
   So it is easy to spot where your build is currently at and/or where it failed.
 
 
