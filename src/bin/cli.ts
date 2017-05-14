@@ -30,21 +30,41 @@ const exitWithError = (code: ErrCode, message?: string, prefix?: string) => {
 };
 
 const defaultFilename = programName + 'file.js';
-// TODO: read from package json?
-const version = '0.0.1';
+const version = require('../../package.json').version;
 
 const printProgramHelp = () => {
-  // TODO: colorize this
-  console.log(`${programName} v${version}`);
+  console.log(chalk.dim.blue(`${programName} v${version}`));
   console.log();
   console.log(`usage:`);
-  console.log(` - run command:          ${programName} [-f ${defaultFilename}] <command> [--profile] ...commandOptions`);
-  console.log(` - list all commands:    ${programName} [-f ${defaultFilename}] --list`);
-  console.log(` - list command:         ${programName} [-f ${defaultFilename}] <command> --list`);
-  console.log(` - show help (this):     ${programName} [--help]`);
-  console.log(` [--profile]             force show the time it takes to run each subcommand`);
-  console.log(` [--show-time]           force show the current time`);
-  console.log(` [--color/--no-color]    force colored/uncolored output (default: autodetect)`);
+
+  const pad = (str: string) => {
+    str = ' ' + str;
+    for (let i = chalk.stripColor(str).length; i < 34; i++) {
+      str += ' ';
+    }
+    return str;
+  };
+
+  const logHelp1 = (what: string, how: string, showFile: boolean) => {
+    const left = pad(chalk.dim.green(` - ${what}`));
+    const right = `${programName} ${showFile ? `[-f ${defaultFilename}] ` : ''}${chalk.dim.magenta(how)}`;
+    console.log(left + right);
+  };
+
+  logHelp1('run command:', `<command> ...commandOptions`, true);
+  logHelp1('list all commands:', `--list`, true);
+  logHelp1('list command:', ` <command> --list`, true);
+  logHelp1('show help (this):', `[--help]`, false);
+
+  const logArgHelp = (argName: string, desc: string) => {
+    const left = pad(' ' + chalk.dim.gray(`[${chalk.dim.blue(argName)}]`));
+    console.log(left + desc);
+
+  };
+
+  logArgHelp('--profile', 'force show the time it takes to run each subcommand');
+  logArgHelp('--show-time', 'force show the current time');
+  logArgHelp('--color/--no-color', 'force colored/uncolored output (default: autodetect)');
 };
 
 interface FileToLoad {
