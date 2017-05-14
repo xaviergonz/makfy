@@ -207,7 +207,6 @@ const execArray = async (commands: ExecCommand[], baseContext: ExecContext, exec
     // turning into sync mode
     await execFunction(...commands);
   }
-
 };
 
 
@@ -232,9 +231,11 @@ const execObject = async (command: ExecObject, context: ExecContext) => {
   await runCommandAsync(cmdName, args || {}, context, true);
 };
 
+
 const execHelpString = (command: string, context: ExecContext) => {
   console.log('\n' + formatContextId(context) + chalk.bgCyan.bold.white(`${command.substr(1).trim()}`));
 };
+
 
 const execCommandString = async (command: string, context: ExecContext) => {
   // add node_modules/.bin to path
