@@ -10,7 +10,7 @@ import { ParsedCommand } from './parser/command';
 import { ParsedCommands } from './parser/commands';
 import { Command, Commands } from './schema/commands';
 import { FullOptions } from './schema/options';
-import { ExecCommand, ExecFunction, ExecObject } from './schema/runtime';
+import { ExecCommand, ExecFunction, ExecObject, ExecUtils } from './schema/runtime';
 import * as shellescape from './shellescape';
 import { formatContextId, formatContextIdStack, resetColors, unrollGlobPatternsAsync } from './utils';
 import Socket = NodeJS.Socket;
@@ -49,7 +49,7 @@ const logWarn = (idStack: string[], showTime: boolean, str: string) => {
 };
 
 const logInfo = (idStack: string[], showTime: boolean, str: string) => {
-  console.log(formatContextIdStack(idStack, showTime) + chalk.dim.blue(`${str}`));
+  console.log(formatContextIdStack(idStack, showTime) + chalk.dim.green(`${str}`));
 };
 
 export const runCommandAsync = async (commandName: string, commandArgs: object, baseContext: ExecContext, unknownArgMeansError: boolean) => {
@@ -88,20 +88,25 @@ export const runCommandAsync = async (commandName: string, commandArgs: object, 
     finalCommandArgs[key] = argDef.parse(commandArgs[key]);
   });
 
-  // check hashes before
-  let skipIfSame = command.skipIfSame;
-  if (skipIfSame) {
-    skipIfSame = skipIfSame.map((e) => e.trim()).filter((e) => e.length > 0);
-    if (skipIfSame.length > 0) {
-      info('checking if command can be skipped...');
+  const execFunc = createExecFunctionContext(baseContext, baseIdStack, true);
+
+  const utils: ExecUtils = {
+    filesChanged: async (gobPatterns, logResult = true) => {
+      if (typeof gobPatterns === 'string') {
+        gobPatterns = [ gobPatterns ];
+      }
+
+      gobPatterns = gobPatterns.map((e) => e.trim()).filter((e) => e.length > 0);
+      if (gobPatterns.length === 0) {
+        return false;
+      }
 
       // unroll glob patterns
-      const files = await unrollGlobPatternsAsync(skipIfSame);
+      const files = await unrollGlobPatternsAsync(gobPatterns);
 
       createCacheFolder();
-      const hashFilename = getHashCollectionFilename(baseContext.makfyFilename, commandName);
+      const hashFilename = getHashCollectionFilename(baseContext.makfyFilename, gobPatterns, 'sha1');
 
-      info(`checking hash of ${files.length} files against '${hashFilename}'...`);
       let oldHashCollection;
       //noinspection EmptyCatchBlockJS
       try {
@@ -113,20 +118,22 @@ export const runCommandAsync = async (commandName: string, commandArgs: object, 
 
       const newHashCollection = await checkHashCollectionMatchesAsync(oldHashCollection, files, 'sha1');
       if (newHashCollection) {
-        info(`cached hash did not match, NOT skipping`);
+        if (logResult) {
+          info(`hash of ${files.length} files did not match`);
+        }
         await saveHashCollectionFileAsync(hashFilename, newHashCollection);
+        return true;
       }
       else {
-        info(`cached hash matches, skipping`);
-        return;
+        if (logResult) {
+          info(`hash of ${files.length} files matched`);
+        }
+        return false;
       }
-
     }
-  }
+  };
 
-  const execFunc = createExecFunctionContext(baseContext, baseIdStack, true);
-
-  await command.run(execFunc, finalCommandArgs);
+  await command.run(execFunc, finalCommandArgs, utils);
 };
 
 
@@ -164,6 +171,11 @@ const createExecFunction = (context: ExecContext): ExecFunction => {
         command = command.trim();
         if (command === '') {
           // skip
+        }
+        else if (command.startsWith('@')) {
+          await execObject({
+            _: command.substr(1).trim()
+          }, context);
         }
         else if (command.startsWith('?')) {
           execHelpString(command, context);

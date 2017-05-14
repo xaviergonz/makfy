@@ -1,7 +1,7 @@
 import { Schema } from 'jsonschema';
 import { alphanumericPattern } from './';
 import { ArgDefinition, argsSchema } from './args';
-import { ExecFunction } from './runtime';
+import { ExecFunction, ExecUtils } from './runtime';
 
 export interface Command {
   desc?: string;
@@ -10,7 +10,7 @@ export interface Command {
   };
   internal?: boolean;
   skipIfSame: string[];
-  run(exec: ExecFunction, args: object): void;
+  run(exec: ExecFunction, args: object, utils: ExecUtils): void;
 }
 
 export const commandSchema: Schema = {
@@ -27,13 +27,6 @@ export const commandSchema: Schema = {
     } as Schema,
     internal: {
       type: 'boolean'
-    },
-    skipIfSame: {
-      type: 'array',
-      items: {
-        type: 'string',
-        uniqueItems: true
-      }
     }
   },
   additionalProperties: false,

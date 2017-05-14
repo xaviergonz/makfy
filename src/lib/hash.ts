@@ -149,8 +149,13 @@ export const saveHashCollectionFileAsync = async (hashFilePath: string, hashColl
   });
 };
 
-export const getHashCollectionFilename = (scriptName: string, commandName: string) => {
-  return path.join(cacheFolderName, `${scriptName}-${commandName}.hash`);
+export const getHashCollectionFilename = (scriptName: string, gobPatterns: string[], hashType: HashType) => {
+  gobPatterns = gobPatterns.map((e) => e.trim()).filter((e) => e.length > 0);
+  gobPatterns.sort();
+  const json = JSON.stringify(gobPatterns);
+  const hash = crypto.createHash(hashType).update(json).digest('hex');
+
+  return path.join(cacheFolderName, `${scriptName}-${hash}.hash`);
 };
 
 export const createCacheFolder = () => {
