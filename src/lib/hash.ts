@@ -34,7 +34,7 @@ export const generateHashEntryAsync = async (filePath: string, hashType: HashTyp
   const stream = fs.createReadStream(filePath);
 
   return await new Promise<HashEntry>((resolve, reject) => {
-    stream.on('error', (err: Error) => {
+    stream.once('error', (err: Error) => {
       reject(err);
     });
 
@@ -42,7 +42,7 @@ export const generateHashEntryAsync = async (filePath: string, hashType: HashTyp
       hash.update(data);
     });
 
-    stream.on('end', () => {
+    stream.once('end', () => {
       const hashEntry: HashEntry = {
         hash: hash.digest('base64'),
         size: size,

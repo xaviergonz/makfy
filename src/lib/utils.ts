@@ -1,5 +1,6 @@
 import * as chalk from 'chalk';
 import { ExecContext } from './execRuntime';
+import Socket = NodeJS.Socket;
 
 const glob = require('glob');
 
@@ -95,6 +96,26 @@ export const unrollGlobPatternsAsync = async (globPatterns: string[]): Promise<s
     }
   }
   return [...set];
+};
+
+export const socketFlushWriteAsync = async (socket: Socket, str: string) => {
+  await new Promise((resolve) => {
+    const flushed = socket.write(str);
+    if (flushed) {
+      resolve();
+    }
+    else {
+      socket.once('drain', resolve);
+    }
+  });
+};
+
+export const blockingConsoleLog = async (str: string = '') => {
+  await socketFlushWriteAsync(process.stdout, str);
+};
+
+export const blockingConsoleError = async (str: string = '') => {
+  await socketFlushWriteAsync(process.stderr, str);
 };
 
 export class TextWriter {

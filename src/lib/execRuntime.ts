@@ -12,7 +12,7 @@ import { Command, Commands } from './schema/commands';
 import { FullOptions } from './schema/options';
 import { ExecCommand, ExecFunction, ExecObject, ExecUtils } from './schema/runtime';
 import * as shellescape from './shellescape';
-import { formatContextId, formatContextIdStack, resetColors, unrollGlobPatternsAsync } from './utils';
+import { blockingConsoleError, blockingConsoleLog, formatContextId, formatContextIdStack, resetColors, unrollGlobPatternsAsync } from './utils';
 import Socket = NodeJS.Socket;
 import Timer = NodeJS.Timer;
 
@@ -45,12 +45,12 @@ const contextIdColors = [
   'blue',
 ];
 
-const logWarn = (idStack: string[], showTime: boolean, str: string) => {
-  console.error(formatContextIdStack(idStack, showTime) + chalk.bold.red(`[WARN] ${str}`));
+const logWarnAsync = async (idStack: string[], showTime: boolean, str: string) => {
+  await blockingConsoleError(formatContextIdStack(idStack, showTime) + chalk.bold.red(`[WARN] ${str}`) + '\n');
 };
 
-const logInfo = (idStack: string[], showTime: boolean, str: string) => {
-  console.log(formatContextIdStack(idStack, showTime) + chalk.bold.green(`${str}`));
+const logInfoAsync = async (idStack: string[], showTime: boolean, str: string) => {
+  await blockingConsoleLog(formatContextIdStack(idStack, showTime) + chalk.bold.green(`${str}`) + '\n');
 };
 
 export const runCommandAsync = async (commandName: string, commandArgs: object, baseContext: ExecContext, unknownArgMeansError: boolean) => {
@@ -61,26 +61,26 @@ export const runCommandAsync = async (commandName: string, commandArgs: object, 
 
   const baseIdStack = [...baseContext.idStack, chalk.bold.blue(commandName)];
 
-  const warn = (msg: string) => {
-    logWarn(baseIdStack, baseContext.options.showTime, msg);
+  const warnAsync = async (msg: string) => {
+    await logWarnAsync(baseIdStack, baseContext.options.showTime, msg);
   };
 
-  const info = (msg: string) => {
-    logInfo(baseIdStack, baseContext.options.showTime, msg);
+  const infoAsync = async (msg: string) => {
+    await logInfoAsync(baseIdStack, baseContext.options.showTime, msg);
   };
 
   // warn for ignored args
-  Object.keys(commandArgs).forEach((key) => {
+  for (const key of Object.keys(commandArgs)) {
     const argDef = argDefs[key];
     if (!argDef) {
       if (unknownArgMeansError) {
         throw new MakfyError(`argument '${key}' is not defined as a valid argument for command '${commandName}'`, baseContext);
       }
       else {
-        warn(`argument '${key}' is not defined as a valid argument for this command and will be ignored`);
+        await warnAsync(`argument '${key}' is not defined as a valid argument for this command and will be ignored`);
       }
     }
-  });
+  }
 
   // validate arguments and set default values
   const finalCommandArgs = {};
@@ -120,14 +120,14 @@ export const runCommandAsync = async (commandName: string, commandArgs: object, 
       const newHashCollection = await checkHashCollectionMatchesAsync(oldHashCollection, files, 'sha1');
       if (newHashCollection) {
         if (logResult) {
-          info(`hash of ${files.length} file(s) did not match`);
+          await infoAsync(`hash of ${files.length} file(s) did not match`);
         }
         await saveHashCollectionFileAsync(hashFilename, newHashCollection);
         return true;
       }
       else {
         if (logResult) {
-          info(`hash of ${files.length} file(s) matched`);
+          await infoAsync(`hash of ${files.length} file(s) matched`);
         }
         return false;
       }
@@ -184,10 +184,10 @@ const createExecFunction = (context: ExecContext): ExecFunction => {
         // skip
       }
       else if (Array.isArray(command)) {
-        await execArray(command, context, innerExec);
+        await execArrayAsync(command, context, innerExec);
       }
       else if (typeof command === 'object') {
-        await execObject(command as ExecObject, context);
+        await execObjectAsync(command as ExecObject, context);
       }
       else if (typeof command === 'string') {
         command = command.trim();
@@ -195,15 +195,15 @@ const createExecFunction = (context: ExecContext): ExecFunction => {
           // skip
         }
         else if (command.startsWith('@')) {
-          await execObject({
+          await execObjectAsync({
             _: command.substr(1).trim()
           }, context);
         }
         else if (command.startsWith('?')) {
-          execHelpString(command, context);
+          await execHelpStringAsync(command, context);
         }
         else {
-          await execCommandString(command, context);
+          await execCommandStringAsync(command, context);
         }
       }
     }
@@ -217,7 +217,7 @@ const createExecFunction = (context: ExecContext): ExecFunction => {
 };
 
 
-const execArray = async (commands: ExecCommand[], baseContext: ExecContext, execFunction: ExecFunction) => {
+const execArrayAsync = async (commands: ExecCommand[], baseContext: ExecContext, execFunction: ExecFunction) => {
   if (baseContext.syncMode) {
     // turning into parallel mode
     const baseIdStack = [...baseContext.idStack];
@@ -232,7 +232,7 @@ const execArray = async (commands: ExecCommand[], baseContext: ExecContext, exec
 };
 
 
-const execObject = async (command: ExecObject, context: ExecContext) => {
+const execObjectAsync = async (command: ExecObject, context: ExecContext) => {
   const cmdName = command._;
   const args = command.args;
   let cmd: Command;
@@ -254,12 +254,12 @@ const execObject = async (command: ExecObject, context: ExecContext) => {
 };
 
 
-const execHelpString = (command: string, context: ExecContext) => {
-  console.log('\n' + formatContextId(context) + chalk.bgBlue.bold.white(`${command.substr(1).trim()}`));
+const execHelpStringAsync = async (command: string, context: ExecContext) => {
+  await blockingConsoleLog('\n' + formatContextId(context) + chalk.bgBlue.bold.white(`${command.substr(1).trim()}`) + '\n');
 };
 
 
-const execCommandString = async (command: string, context: ExecContext) => {
+const execCommandStringAsync = async (command: string, context: ExecContext) => {
   // add node_modules/.bin to path
   const pathEnvName = getPathEnvName();
   const env = Object.assign({}, process.env, {
@@ -344,7 +344,7 @@ const execCommandString = async (command: string, context: ExecContext) => {
 
     let exitDone = false;
 
-    childProc.on('error', (err) => {
+    childProc.once('error', (err) => {
       if (exitDone) return;
       exitDone = true;
 
@@ -353,25 +353,24 @@ const execCommandString = async (command: string, context: ExecContext) => {
     });
 
     // flush output every second
-    let flushInterval: Timer | undefined = setInterval(() => {
-      outputBuffer.flush();
+    let flushInterval: Timer | undefined = setInterval(async () => {
+      await outputBuffer.flushAsync();
     }, 1000);
 
-    const finish = (error?: Error) => {
+    const finishAsync = async (error?: Error) => {
       if (flushInterval) {
         clearInterval(flushInterval);
         flushInterval = undefined;
       }
       printProfileTime(outputBuffer);
-      outputBuffer.flush();
-      console.log();
+      await outputBuffer.flushAsync();
       cleanup();
 
       if (error) reject(error);
       resolve();
     };
 
-    childProc.on('close', (code, signal) => {
+    childProc.once('close', async (code, signal) => {
       if (exitDone) return;
       exitDone = true;
 
@@ -382,15 +381,15 @@ const execCommandString = async (command: string, context: ExecContext) => {
           // read the temp file with the new cwd
           context.cwd = fs.readFileSync(tmpFilename, 'utf-8').replace(/\r?\n|\r/g, '').trim();
 
-          finish();
+          await finishAsync();
         }
         else {
-          finish(showAndGetError(outputBuffer, code, signal));
+          await finishAsync(showAndGetError(outputBuffer, code, signal));
         }
       }
       else {
         // killed
-        finish(showAndGetError(outputBuffer, code, signal));
+        await finishAsync(showAndGetError(outputBuffer, code, signal));
       }
     });
 

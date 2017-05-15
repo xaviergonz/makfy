@@ -1,5 +1,6 @@
 import Socket = NodeJS.Socket;
 import * as chalk from 'chalk';
+import { socketFlushWriteAsync } from './utils';
 
 export interface OutputBufferData {
   type: string;
@@ -37,7 +38,7 @@ export class OutputBuffer {
     }
   }
 
-  flush() {
+  async flushAsync() {
     const linePrefix = this._linePrefix;
 
     let lastEndedInNewLine = true;
@@ -74,7 +75,7 @@ export class OutputBuffer {
       }
 
       const text = prefixedLines.join('\n');
-      socket.write(text);
+      await socketFlushWriteAsync(socket, text);
 
       const uncoloredText = chalk.stripColor(text);
       lastEndedInNewLine = uncoloredText.length > 0 && uncoloredText[uncoloredText.length - 1] === '\n';
