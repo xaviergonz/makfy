@@ -3,6 +3,7 @@
   <component name="ProjectCodeStyleSettingsManager">
     <option name="PER_PROJECT_SETTINGS">
       <value>
+        <option name="LINE_SEPARATOR" value="&#10;" />
         <option name="RIGHT_MARGIN" value="160" />
         <CssCodeStyleSettings>
           <option name="HEX_COLOR_LOWER_CASE" value="true" />
@@ -106,6 +107,5 @@
       </value>
     </option>
     <option name="USE_PER_PROJECT_SETTINGS" value="true" />
-    <option name="PREFERRED_PROJECT_CODE_STYLE" value="jgg_1" />
   </component>
 </project>

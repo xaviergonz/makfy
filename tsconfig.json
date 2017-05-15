@@ -33,6 +33,7 @@
     "strictNullChecks": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    "downlevelIteration": true
+    "downlevelIteration": true,
+    "newLine": "LF"
   }
 }

@@ -8,7 +8,8 @@
   },
   "scripts": {
     "build": "tsc -p .",
-    "clean": "rimraf ./dist"
+    "clean": "rimraf ./dist",
+    "prepublishOnly": "npm run clean && npm run build"
   },
   "files": [
     "dist"
