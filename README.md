@@ -260,15 +260,15 @@ In more detail:
      > An ```ArgDefinition``` can be:
      > * **Flag option - ```{ type: 'flag' | 'f' }```**
      >
-     >  > An optional flag, false by default unless you use ```--argName```
+     >   > An optional flag, false by default unless you use ```--argName```
      >
      > * **String option - ```{ type: 'string' | 's', byDefault?: string }```**
      >
-     >  > A string option, required if no ```byDefault``` is given (```--argName=string```, use quotes if it has to have spaces)
+     >   > A string option, required if no ```byDefault``` is given (```--argName=string```, use quotes if it has to have spaces)
      >
      > * **Enum option - ```{ type: 'enum' | 'e', values: string[], byDefault?: string }```**
      >
-     >  > An enum option where only ```values``` are valid, required if no ```byDefault``` is given (```--argName=string```)
+     >   > An enum option where only ```values``` are valid, required if no ```byDefault``` is given (```--argName=string```)
      >
      > All of them accept a ```desc?: string``` property in case you want to add a given help string to them.
 
