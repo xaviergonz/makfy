@@ -111,8 +111,8 @@ module.exports = {
     build: {
       run: async(exec) => {
         await exec(
-            '@clean',
-            ... // whatever commands go next
+          '@clean',
+          ... // whatever commands go next
         );        
       }
     }
@@ -130,8 +130,8 @@ module.exports = {
     build: {
       run: async(exec) => {
         await exec(
-            { _: 'clean', args: { dev: true, prod: true }}
-            ... // whatever commands go next
+          { _: 'clean', args: { dev: true, prod: true }}
+          ... // whatever commands go next
         );        
       }
     }
