@@ -4,13 +4,13 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as tmp from 'tmp';
 import { MakfyError, RunError } from './errors';
-import { cacheFolderName, checkHashCollectionMatchesAsync, createCacheFolder, getHashCollectionFilename, loadHashCollectionFileAsync, saveHashCollectionFileAsync } from './hash';
+import { cacheFolderName, createCacheFolder, generateHashCollectionAsync, getHashCollectionDelta, getHashCollectionFilename, HashCollection, loadHashCollectionFileAsync } from './hash';
 import { OutputBuffer } from './OutputBuffer';
 import { ParsedCommand } from './parser/command';
 import { ParsedCommands } from './parser/commands';
 import { Command, Commands } from './schema/commands';
 import { FullOptions } from './schema/options';
-import { ExecCommand, ExecFunction, ExecObject, ExecUtils } from './schema/runtime';
+import { ExecCommand, ExecFunction, ExecObject, ExecUtils, GetFileChangesResult } from './schema/runtime';
 import * as shellescape from './shellescape';
 import { blockingConsoleError, blockingConsoleLog, formatContextId, formatContextIdStack, resetColors, unrollGlobPatternsAsync } from './utils';
 import Socket = NodeJS.Socket;
@@ -24,6 +24,11 @@ const getCwdName = () => (getShellType() === 'sh' ? 'pwd' : 'cd');
 const getChdirName = () => (getShellType() === 'sh' ? 'cd' : 'cd /d');
 const escapeForShell = (stringOrArray: string | string[]) => shellescape.escapePath(getShellType(), stringOrArray);
 
+export interface CachedGetFileChangesResult {
+  result: GetFileChangesResult;
+  oldHashCollection?: HashCollection;
+  newHashCollection: HashCollection;
+}
 
 export interface ExecContext {
   commands: Commands;
@@ -35,6 +40,10 @@ export interface ExecContext {
   idStack: string[];
   cwd?: string;
   syncMode: boolean;
+
+  getFileChangesResults: {
+    [hashFilename: string]: CachedGetFileChangesResult;
+  };
 }
 
 const contextIdColors = [
@@ -92,21 +101,52 @@ export const runCommandAsync = async (commandName: string, commandArgs: object, 
   const execFunc = createExecFunctionContext(baseContext, baseIdStack, true);
 
   const utils: ExecUtils = {
-    filesChanged: async (gobPatterns, contextName = 'default', logResult = true) => {
-      if (typeof gobPatterns === 'string') {
-        gobPatterns = [ gobPatterns ];
+    getFileChangesAsync: async (contextName, globPatterns, options?) => {
+      options = {
+        log: true,
+        ...options
+      };
+      if (contextName === undefined) {
+        contextName = '';
       }
 
-      gobPatterns = gobPatterns.map((e) => e.trim()).filter((e) => e.length > 0);
-      if (gobPatterns.length === 0) {
-        return false;
+      const logChangesAsync = async (delta: GetFileChangesResult) => {
+        if (options!.log) {
+          if (!delta.hasChanges) {
+            await infoAsync(`[${contextName}] no files changed`);
+          }
+          else {
+            if (delta.cleanRun) {
+              await infoAsync(`[${contextName}] files changed: assuming all, clean run (${delta.added.length} files)`);
+            }
+            else {
+              await infoAsync(`[${contextName}] files changed: ${delta.unmodified.length} unmodified, ${delta.modified.length} modified, ${delta.removed.length} removed, ${delta.added.length} added`);
+            }
+          }
+        }
+      };
+
+      // try to get a cached result first
+      const hashFilename = getHashCollectionFilename(baseContext.makfyFileContents || baseContext.makfyFilename, contextName, 'sha1');
+      if (baseContext.getFileChangesResults[hashFilename]) {
+        const cached = baseContext.getFileChangesResults[hashFilename];
+        await logChangesAsync(cached.result);
+        return cached.result;
       }
 
-      // unroll glob patterns
-      const files = await unrollGlobPatternsAsync(gobPatterns);
+      if (typeof globPatterns === 'string') {
+        globPatterns = [ globPatterns ];
+      }
+
+      globPatterns = globPatterns.map((e) => e.trim()).filter((e) => e.length > 0);
+
+      let files: string[] = [];
+      if (globPatterns.length > 0) {
+        // unroll glob patterns
+        files = await unrollGlobPatternsAsync(globPatterns);
+      }
 
       createCacheFolder();
-      const hashFilename = getHashCollectionFilename(baseContext.makfyFileContents || baseContext.makfyFilename, gobPatterns, contextName, 'sha1');
 
       let oldHashCollection;
       //noinspection EmptyCatchBlockJS
@@ -117,22 +157,24 @@ export const runCommandAsync = async (commandName: string, commandArgs: object, 
         // do nothing
       }
 
-      const newHashCollection = await checkHashCollectionMatchesAsync(oldHashCollection, files, 'sha1');
-      if (newHashCollection) {
-        if (logResult) {
-          await infoAsync(`hash of ${files.length} file(s) did not match`);
-        }
-        await saveHashCollectionFileAsync(hashFilename, newHashCollection);
-        return true;
-      }
-      else {
-        if (logResult) {
-          await infoAsync(`hash of ${files.length} file(s) matched`);
-        }
-        return false;
-      }
+      const newHashCollection = await generateHashCollectionAsync(files, 'sha1', false);
+
+      const delta = getHashCollectionDelta(oldHashCollection, newHashCollection);
+
+      const cached = {
+        result: delta,
+        newHashCollection: newHashCollection,
+        oldHashCollection: oldHashCollection
+      };
+
+      await logChangesAsync(delta);
+
+      baseContext.getFileChangesResults[hashFilename] = cached;
+
+      return delta;
     },
-    cleanCacheSync() {
+
+    cleanCache() {
       const deleteFolderRecursive = (dir: string) => {
         if (!fs.existsSync(dir)) return;
 

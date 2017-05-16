@@ -1,6 +1,7 @@
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
+import { GetFileChangesResult } from './schema/runtime';
 
 export type HashType = 'sha1';
 
@@ -67,56 +68,62 @@ export const generateHashCollectionAsync = async (files: string[], hashType: Has
 };
 
 /**
- * If the hash matches it will return undefined, else it will return the new hash collection.
+ * Gets a delta between two hash collections.
  * @param oldHashCollection
- * @param files
- * @param hashType
- * @return {Promise<HashCollection | undefined>}
+ * @param newHashCollection
+ * @return {Promise<GetFileChangesResult>}
  */
-export const checkHashCollectionMatchesAsync = async (oldHashCollection: HashCollection | undefined, files: string[], hashType: HashType): Promise<HashCollection | undefined> => {
-  const genHash = async (onlySize: boolean) => {
-    return await generateHashCollectionAsync(files, hashType, onlySize);
+export const getHashCollectionDelta = (oldHashCollection: HashCollection | undefined, newHashCollection: HashCollection): GetFileChangesResult => {
+  const result: GetFileChangesResult = {
+    hasChanges: false,
+    cleanRun: false,
+    removed: [],
+    modified: [],
+    unmodified: [],
+    added: []
   };
 
-  // no previous hash collection
-  if (
-    !oldHashCollection || // no previous hash collection
-    hashType !== oldHashCollection.hashType || // different hash type
-    files.length !== Object.keys(oldHashCollection.hashes).length // different number of files
-  ) {
-    return await genHash(false);
+  if (oldHashCollection === undefined) {
+    result.hasChanges = true;
+    result.cleanRun = true;
+    result.added = Object.keys(newHashCollection.hashes);
+    return result;
   }
 
-  // all file paths must be the same
-  const hashes = oldHashCollection.hashes;
-  for (const fpath of files) {
-    if (!hashes[fpath]) {
-      return await genHash(false);
+  if (oldHashCollection.hashType !== newHashCollection.hashType) {
+    throw new Error('hash type mistmatch');
+  }
+
+  const oldHashes = oldHashCollection.hashes;
+  const newHashes = newHashCollection.hashes;
+
+  const union = new Set<string>([...Object.keys(oldHashes), ...Object.keys(newHashes)]);
+  for (const e of union) {
+    const oldHash = oldHashes[e];
+    const newHash = newHashes[e];
+    if (oldHash && newHash) {
+      if (oldHash.size === newHash.size && oldHash.hash === newHash.hash) {
+        result.unmodified.push(e);
+      }
+      else {
+        result.hasChanges = true;
+        result.modified.push(e);
+      }
+    }
+    else if (oldHash) {
+      result.hasChanges = true;
+      result.removed.push(e);
+    }
+    else if (newHash) {
+      result.hasChanges = true;
+      result.added.push(e);
+    }
+    else {
+      throw new Error('no old and no new hash, this should not happen');
     }
   }
 
-  // all sizes must be the same
-  const sizesHash = await genHash(true);
-  for (const fpath of files) {
-    const hash1 = hashes[fpath];
-    const hash2 = sizesHash.hashes[fpath];
-    if (hash1.size !== hash2.size) {
-      return await genHash(false);
-    }
-  }
-
-  // all hashes must be the same
-  const fullHash = await genHash(false);
-  for (const fpath of files) {
-    const hash1 = hashes[fpath];
-    const hash2 = fullHash.hashes[fpath];
-    if (hash1.size !== hash2.size || hash1.hash !== hash2.hash) {
-      return fullHash;
-    }
-  }
-
-  // matches
-  return undefined;
+  return result;
 };
 
 /**
@@ -149,11 +156,8 @@ export const saveHashCollectionFileAsync = async (hashFilePath: string, hashColl
   });
 };
 
-export const getHashCollectionFilename = (scriptContents: string, gobPatterns: string[], contextName: string, hashType: HashType) => {
-  gobPatterns = gobPatterns.map((e) => e.trim()).filter((e) => e.length > 0);
-  gobPatterns.sort();
-  const json = JSON.stringify(gobPatterns);
-  const hash = crypto.createHash(hashType).update(scriptContents + contextName + json).digest('hex');
+export const getHashCollectionFilename = (scriptContents: string, contextName: string, hashType: HashType) => {
+  const hash = crypto.createHash(hashType).update(scriptContents + contextName + hashType).digest('hex');
 
   return path.join(cacheFolderName, `${hash}.hash`);
 };

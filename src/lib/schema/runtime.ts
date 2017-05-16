@@ -9,8 +9,21 @@ export type ExecCommand = string | ExecObject | any[]; // should be ExecCommand[
 
 export type ExecFunction = (...commands: ExecCommand[]) => Promise<{ keepContext: ExecFunction }>;
 
+export interface GetFileChangesOptions {
+  log: boolean;
+}
+
+export interface GetFileChangesResult {
+  hasChanges: boolean;
+  cleanRun: boolean;
+  added: string[];
+  removed: string[];
+  modified: string[];
+  unmodified: string[];
+}
+
 export interface ExecUtils {
-  filesChanged(globPatterns: string[] | string, contextName?: string, logResult?: boolean): Promise<boolean>;
-  cleanCacheSync(): void;
+  getFileChangesAsync(contextName: string, globPatterns: string[] | string, options?: Partial<GetFileChangesOptions>): Promise<GetFileChangesResult>;
+  cleanCache(): void;
   escape(...parts: string[]): string;
 }

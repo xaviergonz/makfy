@@ -2,6 +2,7 @@ import * as chalk from 'chalk';
 import { MakfyError, RunError } from './errors';
 import * as execRuntime from './execRuntime';
 import { ExecContext } from './execRuntime';
+import { saveHashCollectionFileAsync } from './hash';
 import { parseOptions } from './options';
 import { ParsedArgDefinition } from './parser/commandArg';
 import { parseCommands } from './parser/commands';
@@ -45,6 +46,8 @@ export const runCommandAsync = async (runCommandOptions: RunCommandOptions) => {
   // run
   const startTime = process.hrtime();
 
+  const getFileChangesResults = {};
+
   const execContext: ExecContext = {
     commands: commands,
     parsedCommands: parsedCommands,
@@ -53,10 +56,18 @@ export const runCommandAsync = async (runCommandOptions: RunCommandOptions) => {
     options: parsedOptions,
     syncMode: true,
     idStack: [],
+    getFileChangesResults: getFileChangesResults,
   };
 
   try {
     await execRuntime.runCommandAsync(commandName, commandArgs || {}, execContext, false);
+
+    // on success save new caches in parallel
+    const savePromises = [];
+    for (const [key, value] of entries(getFileChangesResults)) {
+      savePromises.push(saveHashCollectionFileAsync(key, value.newHashCollection));
+    }
+    await Promise.all(savePromises);
   }
   catch (err) {
     if (!(err instanceof RunError) && !(err instanceof MakfyError)) {
