@@ -276,7 +276,7 @@ In more detail:
   
    > When set it will show the current time near each log line (default: ```false```)
 
-### ```utils: object```
+### Utility methods (provided by ```utils```)
 * ```escape: (...parts: string[]) => string```
   > Escapes all parts of a given shell command (e.g. ```escape('hello', 'to this world')``` will return under cmd ```hello "to this world"``` and under other shells ```hello 'to this world'```)
 
