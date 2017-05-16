@@ -9,6 +9,8 @@
 Install it globally ```npm install -g makfy```  
 or locally ```npm install --save-dev makfy``` 
 
+__To support this project star it on [github](https://github.com/xaviergonz/makfy)!__
+
 ## What is makfy?
 
 makfy is an evolution of npm-scripts to help you automate time-consuming tasks in your development workflow.
