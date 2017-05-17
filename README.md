@@ -39,8 +39,8 @@ makfy tries to follow that KISS philosophy while adapting gracefully to complex 
 * **Concurrency made easy**  
   Thanks to async/await plus some nifty tricks (and concurrent logs look good!).
   
-* **Utils included**  
-  Such as a source file checker so shell commands are not run twice if not needed.
+* **Utils included, such as a smart cache!**  
+  For example it includes a file checker so shell commands are not run twice if not needed, or only run on the files that changed.
   
 * **Strong validation of ```makfyfile.js``` files**  
   You should not be left wondering if you mistyped something.
