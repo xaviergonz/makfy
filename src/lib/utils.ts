@@ -18,6 +18,18 @@ export const isFunction = (func: any) => {
   return typeof func === 'function';
 };
 
+export const isStringArray = (arr: any) => {
+  if (!Array.isArray(arr)) {
+    return false;
+  }
+  for (const e of arr) {
+    if (typeof e !== 'string') {
+      return false;
+    }
+  }
+  return true;
+};
+
 export const getTimeString = (show: boolean) => {
   if (!show) return '';
   return chalk.bold.gray(`[${new Date(new Date().getTime()).toLocaleTimeString()}] `);

@@ -13,7 +13,7 @@ import { Command, Commands } from './schema/commands';
 import { FullOptions } from './schema/options';
 import { ExecCommand, ExecFunction, ExecObject, ExecUtils, GetFileChangesResult } from './schema/runtime';
 import * as shellescape from './shellescape';
-import { blockingConsoleError, blockingConsoleLog, formatContextId, formatContextIdStack, resetColors, unrollGlobPatternsAsync } from './utils';
+import { blockingConsoleError, blockingConsoleLog, formatContextId, formatContextIdStack, isStringArray, resetColors, unrollGlobPatternsAsync } from './utils';
 import Socket = NodeJS.Socket;
 import Timer = NodeJS.Timer;
 
@@ -103,6 +103,13 @@ export const runCommandAsync = async (commandName: string, commandArgs: object, 
 
   const utils: ExecUtils = {
     getFileChangesAsync: async (contextName, globPatterns, options?) => {
+      if (typeof contextName !== 'string') {
+        throw new MakfyError(`'contextName' argument must be a string`, baseContext);
+      }
+      if (typeof contextName !== 'string' && !isStringArray(globPatterns)) {
+        throw new MakfyError(`'globPatterns' argument must be a string or an array of strings`, baseContext);
+      }
+
       options = {
         log: true,
         ...options
@@ -193,6 +200,7 @@ export const runCommandAsync = async (commandName: string, commandArgs: object, 
       const cf = path.join('.', cacheFolderName);
       deleteFolderRecursive(cf);
     },
+
     escape(...parts) {
       return shellescape.escapePath(getShellType(), [...parts]);
     }
