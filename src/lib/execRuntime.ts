@@ -3,6 +3,7 @@ import * as child_process from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as tmp from 'tmp';
+import * as yargs from 'yargs';
 import { MakfyError, RunError } from './errors';
 import { cacheFolderName, createCacheFolder, generateHashCollectionAsync, getHashCollectionDelta, getHashCollectionFilename, HashCollection, loadHashCollectionFileAsync } from './hash';
 import { OutputBuffer } from './OutputBuffer';
@@ -237,9 +238,7 @@ const createExecFunction = (context: ExecContext): ExecFunction => {
           // skip
         }
         else if (command.startsWith('@')) {
-          await execObjectAsync({
-            _: command.substr(1).trim()
-          }, context);
+          await execCSubcmmandStringAsync(command, context);
         }
         else if (command.startsWith('?')) {
           await execHelpStringAsync(command, context);
@@ -271,6 +270,32 @@ const execArrayAsync = async (commands: ExecCommand[], baseContext: ExecContext,
     // turning into sync mode
     await execFunction(...commands);
   }
+};
+
+
+const execCSubcmmandStringAsync = async (command: string, context: ExecContext) => {
+  // strip @ at the beginning
+  command = command.substr(1).trim();
+  const parsed = yargs.parse(command);
+
+  if (parsed._.length === 0) {
+    throw new MakfyError('one command name must be present in a subcommand string', context);
+  }
+
+  if (parsed._.length > 1) {
+    throw new MakfyError(`only a single command name is allowed in a subcommand string, but there were ${parsed._.length}: ${parsed._.join(', ')}`, context);
+  }
+
+  const cmdName = parsed._[0];
+  delete parsed._;
+  delete parsed.$0;
+
+  await execObjectAsync({
+    _: cmdName,
+    args: {
+      ...parsed
+    }
+  }, context);
 };
 
 

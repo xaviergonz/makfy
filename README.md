@@ -114,6 +114,7 @@ module.exports = {
       run: async(exec) => {
         await exec(
           '@clean',
+          { _: 'clean' }, // same as above
           ... // whatever commands go next
         );        
       }
@@ -132,7 +133,8 @@ module.exports = {
     build: {
       run: async(exec) => {
         await exec(
-          { _: 'clean', args: { dev: true, prod: true }},
+          '@clean --dev --prod',
+          { _: 'clean', args: { dev: true, prod: true }}, // same as above          
           ... // whatever commands go next
         );        
       }
@@ -215,7 +217,7 @@ In more detail:
     >   > * **command invocation object - ```{ _: 'commandName', args?: object }```**
     >   >   > It will run another command inside the current command, optionally passing it the given arguments if desired.         
     >   >   >
-    >   >   > A simpler way to invoke sub-commands (if arguments are not needed) is using the string ```'@commandName'```.
+    >   >   > A simpler way to invoke sub-commands is using the string ```'@commandName ...args'``` as if it was invoked from the shell.
     >   >   >
     >   >   > Note that the arguments are validated automatically for you as they would if they were coming from the command line directly.
     >   >
