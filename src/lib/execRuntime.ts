@@ -117,7 +117,7 @@ export const runCommandAsync = async (commandName: string, commandArgs: object, 
           }
           else {
             if (delta.cleanRun) {
-              await infoAsync(`[${contextName}] files changed: assuming all, clean run (${delta.added.length} files)`);
+              await infoAsync(`[${contextName}] files changed: clean run - assuming all (${delta.added.length} files)`);
             }
             else {
               await infoAsync(`[${contextName}] files changed: ${delta.unmodified.length} unmodified, ${delta.modified.length} modified, ${delta.removed.length} removed, ${delta.added.length} added`);
