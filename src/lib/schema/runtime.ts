@@ -26,4 +26,5 @@ export interface ExecUtils {
   getFileChangesAsync(contextName: string, globPatterns: string[] | string, options?: Partial<GetFileChangesOptions>): Promise<GetFileChangesResult>;
   cleanCache(): void;
   escape(...parts: string[]): string;
+  fixPath(path: string, style: 'autodetect' | 'windows' | 'posix'): string;
 }

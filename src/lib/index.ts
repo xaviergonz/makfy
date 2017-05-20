@@ -181,6 +181,5 @@ export const listAllCommands = (commands: Commands, listArguments = true, listIn
       output += listCommand(commands, commandName, listArguments);
     }
   }
-
   return output;
 };

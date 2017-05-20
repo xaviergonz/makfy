@@ -13,17 +13,21 @@ import { Command, Commands } from './schema/commands';
 import { FullOptions } from './schema/options';
 import { ExecCommand, ExecFunction, ExecObject, ExecUtils, GetFileChangesResult } from './schema/runtime';
 import * as shellescape from './shellescape';
+import { ShellType } from './shellescape';
 import { blockingConsoleError, blockingConsoleLog, formatContextId, formatContextIdStack, isStringArray, resetColors, unrollGlobPatternsAsync } from './utils';
 import Socket = NodeJS.Socket;
 import Timer = NodeJS.Timer;
 
 const prettyHrTime = require('pretty-hrtime');
 
-const getShellType = () => (process.env.SHELL ? 'sh' : 'cmd');
+const getShellType = (): ShellType => (!process.env.SHELL && process.platform === 'win32' ? 'cmd' : 'sh');
 const getPathEnvName = () => (getShellType() === 'sh' ? 'PATH' : 'Path');
+const getPathDelimiter = () => path.delimiter;
 const getCwdName = () => (getShellType() === 'sh' ? 'pwd' : 'cd');
+const getEnvName = () => (getShellType() === 'sh' ? 'printenv' : 'set');
 const getChdirName = () => (getShellType() === 'sh' ? 'cd' : 'cd /d');
-const escapeForShell = (stringOrArray: string | string[]) => shellescape.escapePath(getShellType(), stringOrArray);
+const escapeForShell = (stringOrArray: string | string[]) => shellescape.escapeShell(getShellType(), stringOrArray);
+const fixPath = (path: string) => shellescape.fixPath(getShellType(), path);
 
 export interface CachedGetFileChangesResult {
   result: GetFileChangesResult;
@@ -40,6 +44,7 @@ export interface ExecContext {
 
   idStack: string[];
   cwd?: string;
+  env?: object;
   syncMode: boolean;
 
   getFileChangesResults: {
@@ -202,8 +207,28 @@ export const runCommandAsync = async (commandName: string, commandArgs: object, 
     },
 
     escape(...parts) {
-      return shellescape.escapePath(getShellType(), [...parts]);
+      return escapeForShell([...parts]);
+    },
+
+    fixPath(path, style = 'autodetect') {
+      let sh: ShellType;
+      switch (style) {
+        case undefined:
+        case 'autodetect':
+          sh = getShellType();
+          break;
+        case 'windows':
+          sh = 'cmd';
+          break;
+        case 'posix':
+          sh = 'sh';
+          break;
+        default:
+          throw new MakfyError(`invalid fixPath style - '${style}'`, baseContext);
+      }
+      return shellescape.fixPath(sh, path);
     }
+
   };
 
   await command.run(execFunc, finalCommandArgs, utils);
@@ -335,10 +360,15 @@ const execHelpStringAsync = async (command: string, context: ExecContext) => {
 
 
 const execCommandStringAsync = async (command: string, context: ExecContext) => {
-  // add node_modules/.bin to path
+  // add node_modules/.bin to path if needed
   const pathEnvName = getPathEnvName();
-  const env = Object.assign({}, process.env, {
-    [pathEnvName]: `${path.resolve(path.join('node_modules/.bin'))}${path.delimiter}${process.env[pathEnvName] || ''}`
+  let currentPath = process.env[pathEnvName] || '';
+  const nodeBinPath = path.resolve(path.join('node_modules/.bin')) + getPathDelimiter();
+  if (!currentPath.startsWith(nodeBinPath)) {
+    currentPath = nodeBinPath + currentPath;
+  }
+  const env = Object.assign({}, process.env, context.env, {
+    [pathEnvName]: currentPath
   });
 
   const startTime = process.hrtime();
@@ -361,12 +391,20 @@ const execCommandStringAsync = async (command: string, context: ExecContext) => 
     }
   };
 
-  // get a tmp file to save the current working dir
-  const tmpFilename = tmp.tmpNameSync({prefix: 'makfy-'});
+  // get a tmp file to save the current working dir and env
+  const cwdTmpFilename = tmp.tmpNameSync({prefix: 'makfy-'});
+  const envTmpFilename = tmp.tmpNameSync({prefix: 'makfy-'});
   const cleanup = () => {
     //noinspection EmptyCatchBlockJS
     try {
-      fs.unlinkSync(tmpFilename);
+      fs.unlinkSync(cwdTmpFilename);
+    }
+    catch (err) {
+      // do nothing
+    }
+    //noinspection EmptyCatchBlockJS
+    try {
+      fs.unlinkSync(envTmpFilename);
     }
     catch (err) {
       // do nothing
@@ -390,10 +428,11 @@ const execCommandStringAsync = async (command: string, context: ExecContext) => 
 
   resetColors();
 
-  const cwdName = getCwdName();
-  let finalCommand = `${command} && ${cwdName} > ${escapeForShell(tmpFilename)}`;
+  // add to the final command two extra commands to save the cwd and current env
+  let finalCommand = `${command} && ${getCwdName()} > ${escapeForShell(fixPath(cwdTmpFilename))} && ${getEnvName()} > ${escapeForShell(fixPath(envTmpFilename))}`;
   if (context.cwd) {
-    finalCommand = `${getChdirName()} ${escapeForShell(context.cwd)} && ${finalCommand}`;
+    // set the cwd
+    finalCommand = `${getChdirName()} ${escapeForShell(fixPath(context.cwd))} && ${finalCommand}`;
   }
 
   return new Promise((resolve, reject) => {
@@ -411,9 +450,26 @@ const execCommandStringAsync = async (command: string, context: ExecContext) => 
       outputBuffer.writeString('out', chalk.bgBlue.bold.white(`> ${command}`) + '\n');
     }
 
-    const childProc = child_process.spawn(finalCommand, [], {
+    let shellCommand;
+    let shellArgs: string[];
+    let useShell;
+    if (getShellType() === 'cmd') {
+      useShell = true;
+      shellCommand = finalCommand;
+      shellArgs = [];
+    }
+    else {
+      useShell = false;
+      shellCommand = process.env.SHELL;
+      shellArgs = [
+        '-c',
+        finalCommand
+      ];
+    }
+
+    const childProc = child_process.spawn(shellCommand, shellArgs, {
       env: env,
-      shell: process.env.SHELL !== undefined ? process.env.SHELL : true,
+      shell: useShell,
       stdio: [process.stdin, silentLevel === 0 ? 'pipe' : 'ignore', 'pipe']
     });
 
@@ -454,7 +510,18 @@ const execCommandStringAsync = async (command: string, context: ExecContext) => 
           // standard exit
 
           // read the temp file with the new cwd
-          context.cwd = fs.readFileSync(tmpFilename, 'utf-8').replace(/\r?\n|\r/g, '').trim();
+          context.cwd = fs.readFileSync(cwdTmpFilename, 'utf-8').replace(/\r?\n|\r/g, '').trim();
+
+          // read the temp file with the new env
+          const newEnv = {};
+          fs.readFileSync(envTmpFilename, 'utf-8').replace(/\r/g, '').trim().split('\n').forEach((envLine) => {
+            if (envLine.trim().length > 0) {
+              const pieces = envLine.split('=');
+              const name = pieces[0];
+              newEnv[name] = envLine.substr(name.length + 1);
+            }
+          });
+          context.env = newEnv;
 
           await finishAsync();
         }
