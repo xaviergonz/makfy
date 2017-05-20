@@ -285,7 +285,7 @@ In more detail:
   > Escapes all parts of a given shell command (e.g. ```escape('hello', 'to this world')``` will return under cmd ```hello "to this world"``` and under other shells ```hello 'to this world'```).
 
 * ```fixPath: (path: string, style: 'autodetect' | 'windows' | 'posix') => string```
-  > Fixes a path so it is valid under given shell, by swapping ```/``` and ```\ ``` if needed, plus converting ```c:\...``` to ```/c/...``` in mingw in windows.
+  > Fixes a path so it is valid under a given OS, by swapping ```/``` and ```\ ``` if needed, plus converting ```c:\...``` to ```/c/...``` in mingw in windows.
   > The optional style argument forces the result to be valid in windows or posix (default: ```'autodetect'```).
 
 * ```getFileChangesAsync: async(contextName: string, gobPatterns: string[] | string, options: { log = true }) => Promise<GetFileChangesResult>```
