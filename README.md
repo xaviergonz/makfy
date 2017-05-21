@@ -322,7 +322,7 @@ In more detail:
 ## FAQ
 
 ##### Recommended CLI packages for cross-platform commands
-* _Set/unset an environment variable:_ Just place a call to ```utils.setEnvVar``` inside an ```exec``` call.
+* _Set/unset an environment variable:_ Just invoke ```utils.setEnvVar``` inside an ```exec``` call. Alternatively use [cross-env](https://www.npmjs.com/package/cross-env).
 * _Delete files/directories:_ [rimraf](https://www.npmjs.com/package/rimraf)
 * _Copy files/directories:_ [ncp](https://www.npmjs.com/package/ncp)
 * _Create a directory:_ [mkdirp](https://www.npmjs.com/package/mkdirp)
