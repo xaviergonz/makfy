@@ -2,7 +2,7 @@ import * as chalk from 'chalk';
 import { MakfyError } from '../errors';
 import { validateInstance } from '../schema';
 import { ArgDefinition, argSchema, EnumArgDefinition, FlagArgDefinition, StringArgDefinition } from '../schema/args';
-import { argNameToDashedArgName, errorMessageForObject } from '../utils';
+import { argNameToDashedArgName, errorMessageForObject } from '../utils/formatting';
 
 const enum Type {
   Flag,

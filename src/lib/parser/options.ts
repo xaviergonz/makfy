@@ -1,7 +1,7 @@
-import { MakfyError } from './errors';
-import { validateInstance } from './schema';
-import { FullOptions, optionsSchema, PartialOptions } from './schema/options';
-import { errorMessageForObject } from './utils';
+import { MakfyError } from '../errors';
+import { validateInstance } from '../schema';
+import { FullOptions, optionsSchema, PartialOptions } from '../schema/options';
+import { errorMessageForObject } from '../utils/formatting';
 
 const defaultOptions: FullOptions = {
   profile: false,

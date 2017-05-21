@@ -293,7 +293,11 @@ In more detail:
   > Returns a command string that can be used inside ```exec``` to set/clear an environment variable.
   > For example, ```setEnvVar('NODE_ENV', 'development)``` will return ```'set NODE_ENV=development'``` under a cmd shell and ```'export NODE_ENV=development'``` under other shells.
 
-* ```getFileChangesAsync: async(contextName: string, gobPatterns: string[] | string, options: { log = true }) => Promise<GetFileChangesResult>```
+* ```expandGlobs: async (globPatterns: string[]) => Promise<string[]>```
+  > Expand one or more glob patterns into and array of single files. Note that if the glob pattern starts with ```'!!'``` then matched files will be removed from previous glob pattern results rather than added.
+  > For example, to match all json files except for package.json files pass ```[ './**/*.json', '!!./**/package.json' ]```.
+
+* ```getFileChangesAsync: async (contextName: string, globPatterns: string[] | string, options: { log = true }) => Promise<GetFileChangesResult>```
   > Returns an object which includes the changes to the given files (given a certain context) since the last successful run.
   > If there was no previous successful run (or the cache was cleared) then it is considered a clean run.
   > ```js

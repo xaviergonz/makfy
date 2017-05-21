@@ -5,16 +5,20 @@ import * as path from 'path';
 import * as tmp from 'tmp';
 import * as yargs from 'yargs';
 import { MakfyError, RunError } from './errors';
-import { cacheFolderName, createCacheFolder, generateHashCollectionAsync, getHashCollectionDelta, getHashCollectionFilename, HashCollection, loadHashCollectionFileAsync } from './hash';
-import { OutputBuffer } from './OutputBuffer';
 import { ParsedCommand } from './parser/command';
 import { ParsedCommands } from './parser/commands';
 import { Command, Commands } from './schema/commands';
 import { FullOptions } from './schema/options';
 import { ExecCommand, ExecFunction, ExecObject, ExecUtils, GetFileChangesResult } from './schema/runtime';
-import * as shellescape from './shellescape';
-import { ShellType } from './shellescape';
-import { blockingConsoleError, blockingConsoleLog, formatContextId, formatContextIdStack, isStringArray, resetColors, unrollGlobPatternsAsync } from './utils';
+import { blockingConsoleError, blockingConsoleLog, resetColors } from './utils/console';
+import { formatContextId, formatContextIdStack } from './utils/formatting';
+import { unrollGlobPatternsAsync } from './utils/globs';
+import { cacheFolderName, createCacheFolder, generateHashCollectionAsync, getHashCollectionDelta, getHashCollectionFilename, HashCollection, loadHashCollectionFileAsync } from './utils/hash';
+import { OutputBuffer } from './utils/OutputBuffer';
+import { limitPromiseConcurrency } from './utils/promise';
+import * as shellescape from './utils/shellescape';
+import { ShellType } from './utils/shellescape';
+import { isStringArray } from './utils/typeChecking';
 import Socket = NodeJS.Socket;
 import Timer = NodeJS.Timer;
 
@@ -244,8 +248,13 @@ export const runCommandAsync = async (commandName: string, commandArgs: object, 
         default:
           throw new MakfyError(`unknown shell type - '${shell}'`, baseContext);
       }
-    }
+    },
 
+    async expandGlobsAsync(globPatterns) {
+      return unrollGlobPatternsAsync(globPatterns);
+    },
+
+    limitPromiseConcurrency: limitPromiseConcurrency
   };
 
   await command.run(execFunc, finalCommandArgs, utils);
@@ -336,7 +345,11 @@ const execArrayAsync = async (commands: ExecCommand[], baseContext: ExecContext,
     // turning into parallel mode
     const baseIdStack = [...baseContext.idStack];
     const execFunc = createExecFunctionContext(baseContext, baseIdStack, false);
-    const all = commands.map((cmd) => execFunc(cmd));
+
+    // limit promise concurrency to 32
+    const limit = limitPromiseConcurrency(32);
+
+    const all = commands.map((cmd) => limit(() => execFunc(cmd)));
     await Promise.all(all);
   }
   else {

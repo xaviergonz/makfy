@@ -1,6 +1,6 @@
 import Socket = NodeJS.Socket;
 import * as chalk from 'chalk';
-import { socketFlushWriteAsync } from './utils';
+import { socketFlushWriteAsync } from './sockets';
 
 export interface OutputBufferData {
   type: string;

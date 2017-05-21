@@ -10,7 +10,9 @@ import { alphanumericPattern } from '../lib/schema';
 import { reservedArgNames } from '../lib/schema/args';
 import { Commands } from '../lib/schema/commands';
 import { PartialOptions } from '../lib/schema/options';
-import { errorMessageForObject, formatContextId, isObject, resetColors } from '../lib/utils';
+import { resetColors } from '../lib/utils/console';
+import { errorMessageForObject, formatContextId } from '../lib/utils/formatting';
+import { isObject } from '../lib/utils/typeChecking';
 
 const entries = require('object.entries');
 

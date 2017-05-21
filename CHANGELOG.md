@@ -1,5 +1,9 @@
 # makfy changelog
 
+## 1.1.7
+- added expandGlobs to utils
+- made parallel execution have a limited concurrency for better performance
+
 ## 1.1.5
 - added a setEnvVar method to utils
 - added a FAQ with recommended CLI packages for usual operations

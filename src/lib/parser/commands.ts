@@ -1,7 +1,8 @@
 import { MakfyError } from '../errors';
 import { validateInstance } from '../schema';
 import { Commands, commandsSchema } from '../schema/commands';
-import { errorMessageForObject, isObject } from '../utils';
+import { errorMessageForObject } from '../utils/formatting';
+import { isObject } from '../utils/typeChecking';
 import { parseCommand, ParsedCommand } from './command';
 
 export interface ParsedCommands {

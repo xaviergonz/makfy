@@ -1,7 +1,7 @@
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
-import { GetFileChangesResult } from './schema/runtime';
+import { GetFileChangesResult } from '../schema/runtime';
 
 export type HashType = 'sha1';
 
