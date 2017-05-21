@@ -300,7 +300,7 @@ In more detail:
   > {
   >   hasChanges: boolean,  // true if there are any changes or it is a clean run
   >   cleanRun: boolean,    // true if it is a clean run (no previous version to compare against was available)
-  >   added: string[],      // files created since the last successful run, this is the only array with contents if it is a clean run 
+  >   added: string[],      // files created since the last successful run (this is the only array with contents if it is a clean run) 
   >   removed: string[],    // files deleted since the last successful run
   >   modified: string[],   // files modified since the last successful run
   >   unmodified: string[]  // files not modified since the last successful run
@@ -336,4 +336,4 @@ const a = await exec(...);
 await a.keepContext(...);
 ```
 
-**Note:** In unix style shells you need to export the variable for it to be tracked (e.g. ```export NODE_ENV=production```).
+**Note:** In unix style shells you need to export the variable for it to be tracked (e.g. ```export NODE_ENV=production```). Consider using ```utils.setEnvVar```, which does this for you.
