@@ -1,5 +1,9 @@
 # makfy changelog
 
+## 1.1.5
+- added a setEnvVar method to utils
+- added a FAQ with recommended CLI packages for usual operations
+
 ## 1.1.4
 - added support for MINGW/cygwin (e.g. git-bash) on windows
 - added fixPath to utils

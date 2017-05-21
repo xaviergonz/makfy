@@ -27,4 +27,5 @@ export interface ExecUtils {
   cleanCache(): void;
   escape(...parts: string[]): string;
   fixPath(path: string, style: 'autodetect' | 'windows' | 'posix'): string;
+  setEnvVar(name: string, value: string | undefined): string;
 }

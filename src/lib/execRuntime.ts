@@ -227,6 +227,23 @@ export const runCommandAsync = async (commandName: string, commandArgs: object, 
           throw new MakfyError(`invalid fixPath style - '${style}'`, baseContext);
       }
       return shellescape.fixPath(sh, path);
+    },
+
+    setEnvVar(name, value) {
+      const shell = getShellType();
+      switch (shell) {
+        case 'sh':
+          if (value === undefined) {
+            return `unset ${name}`;
+          }
+          else {
+            return `export ${name}=${escapeForShell(value)}`;
+          }
+        case 'cmd':
+          return `set ${name}=${value === undefined ? '' : value}`;
+        default:
+          throw new MakfyError(`unknown shell type - '${shell}'`, baseContext);
+      }
     }
 
   };
@@ -276,6 +293,10 @@ const createExecFunction = (context: ExecContext): ExecFunction => {
         else if (command.startsWith('?')) {
           await execHelpStringAsync(command, context);
         }
+        // TODO: decide if this is a good idea or not (shx rm sometimes hangs)
+        // else if (command.startsWith('>')) {
+        //   await execShxStringAsync(command, context);
+        // }
         else {
           await execCommandStringAsync(command, context);
         }
@@ -288,6 +309,25 @@ const createExecFunction = (context: ExecContext): ExecFunction => {
   };
 
   return innerExec;
+};
+
+
+const execShxStringAsync = async (command: string, context: ExecContext) => {
+  // strip > at the beginning
+  command = command.substr(1).trim();
+
+  let preCommand = '';
+  if (command.startsWith('%%')) {
+    preCommand = '%%';
+    command = command.substr(2).trim();
+  }
+  else if (command.startsWith('%')) {
+    preCommand = '%';
+    command = command.substr(1).trim();
+  }
+
+  const finalCommand = `${preCommand} shx ${command}`;
+  await execCommandStringAsync(finalCommand, context/*, command*/);
 };
 
 
@@ -359,7 +399,7 @@ const execHelpStringAsync = async (command: string, context: ExecContext) => {
 };
 
 
-const execCommandStringAsync = async (command: string, context: ExecContext) => {
+const execCommandStringAsync = async (command: string, context: ExecContext, commandDisplay?: string) => {
   // add node_modules/.bin to path if needed
   const pathEnvName = getPathEnvName();
   let currentPath = process.env[pathEnvName] || '';
@@ -376,18 +416,24 @@ const execCommandStringAsync = async (command: string, context: ExecContext) => 
   let silentLevel = 0;
   if (command.startsWith('%%')) {
     silentLevel = 2;
-    command = command.substr(2).trim();
+    command = command.substr(2);
   }
   else if (command.startsWith('%')) {
     silentLevel = 1;
-    command = command.substr(1).trim();
+    command = command.substr(1);
+  }
+  command = command.trim();
+
+
+  if (!commandDisplay) {
+    commandDisplay = command.trim();
   }
 
   const printProfileTime = (outputBuffer: OutputBuffer) => {
     if (context.options.profile && silentLevel < 2) {
       const endTime = process.hrtime(startTime);
       outputBuffer.writeString('out',
-        chalk.bold.gray(`finished in ${chalk.bold.magenta(prettyHrTime(endTime))} `) + chalk.bold.gray(`> ${command}`) + '\n');
+        chalk.bold.gray(`finished in ${chalk.bold.magenta(prettyHrTime(endTime))} `) + chalk.bold.gray(`> ${commandDisplay}`) + '\n');
     }
   };
 
@@ -421,7 +467,7 @@ const execCommandStringAsync = async (command: string, context: ExecContext) => 
       err1 = `killed by signal ${signal}`;
     }
 
-    const err2 = `> ${command}`;
+    const err2 = `> ${commandDisplay}`;
     outputBuffer.writeString('err', chalk.bgRed.bold.white(err1) + chalk.bold.red(` ${err2}\n`));
     return new RunError(`${err1} ${err2}`, context);
   };
@@ -447,7 +493,7 @@ const execCommandStringAsync = async (command: string, context: ExecContext) => 
     });
 
     if (silentLevel <= 1) {
-      outputBuffer.writeString('out', chalk.bgBlue.bold.white(`> ${command}`) + '\n');
+      outputBuffer.writeString('out', chalk.bgBlue.bold.white(`> ${commandDisplay}`) + '\n');
     }
 
     let shellCommand;

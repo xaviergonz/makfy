@@ -282,11 +282,16 @@ In more detail:
 
 ### Utility methods (provided by ```utils```)
 * ```escape: (...parts: string[]) => string```
-  > Escapes all parts of a given shell command (e.g. ```escape('hello', 'to this world')``` will return under cmd ```hello "to this world"``` and under other shells ```hello 'to this world'```).
+  > Escapes all parts of a given shell command.
+  > For example, ```escape('hello', 'to this world')``` will return ```hello "to this world"``` under a cmd shell and ```hello 'to this world'``` under other shells .
 
 * ```fixPath: (path: string, style: 'autodetect' | 'windows' | 'posix') => string```
   > Fixes a path so it is valid under a given OS, by swapping ```/``` and ```\ ``` if needed, plus converting ```c:\...``` to ```/c/...``` in mingw in windows.
   > The optional style argument forces the result to be valid in windows or posix (default: ```'autodetect'```).
+
+* ```setEnvVar: (name: string, value: string | undefined) => string```
+  > Returns a command string that can be used inside ```exec``` to set/clear an environment variable.
+  > For example, ```setEnvVar('NODE_ENV', 'development)``` will return ```'set NODE_ENV=development'``` under a cmd shell and ```'export NODE_ENV=development'``` under other shells.
 
 * ```getFileChangesAsync: async(contextName: string, gobPatterns: string[] | string, options: { log = true }) => Promise<GetFileChangesResult>```
   > Returns an object which includes the changes to the given files (given a certain context) since the last successful run.
@@ -313,7 +318,16 @@ In more detail:
 * ```cleanCache: () => void```
   > Cleans the ```.makfy-cache``` folder. Use it if you want to make sure all next calls to ```getFileChangesAsync``` work as if it was a clean run.
 
-### Keeping the context between ```exec``` executions
+
+## FAQ
+
+##### Recommended CLI packages for cross-platform commands
+* _Set/unset an environment variable:_ Just place a call to ```utils.setEnvVar``` inside an ```exec``` call.
+* _Delete files/directories:_ [rimraf](https://www.npmjs.com/package/rimraf)
+* _Copy files/directories:_ [ncp](https://www.npmjs.com/package/ncp)
+* _Create a directory:_ [mkdirp](https://www.npmjs.com/package/mkdirp)
+
+##### Keeping the context between ```exec``` executions
 Executions inside a very same ```exec``` call keep track of changes to the current working directory and environment variables.
 
 If you wish to keep the context between different ```exec``` executions you can do so like this:
