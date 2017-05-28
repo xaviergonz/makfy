@@ -529,7 +529,7 @@ const execCommandStringAsync = async (command: string, context: ExecContext, com
     const childProc = child_process.spawn(shellCommand, shellArgs, {
       env: env,
       shell: useShell,
-      stdio: [process.stdin, silentLevel === 0 ? 'pipe' : 'ignore', 'pipe']
+      stdio: ['pipe', silentLevel === 0 ? 'pipe' : 'ignore', 'pipe'] // we use pipe on stdin to fix some weird hangs on windows
     });
 
     let exitDone = false;

@@ -1,5 +1,8 @@
 # makfy changelog
 
+## 1.1.8
+- fixed hanging on windows sometimes when the child process tries to access stdin
+
 ## 1.1.7
 - added expandGlobs to utils
 - made parallel execution have a limited concurrency for better performance
