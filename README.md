@@ -187,6 +187,7 @@ module.exports = {
       internal?: boolean
     }   
   },
+  dependencies?: string[],
   options?: Options
 };
 ```
@@ -270,7 +271,13 @@ In more detail:
    * **```internal?: boolean```**
      > An optional boolean that indicates that it is an internal command, that is, it should not be shown when listing and cannot be invoked directly from the command line (default: ```false```).
 
- ### ```options: {profile?, showTime?}```
+ ### ```dependencies?: string[]```
+ ```dependencies``` is only ever needed if you use the ```getFilesChangedAsync()``` utility method, since it is
+  used to determine when it a clean run is triggered.
+  As a rule of thumb, if you do a local require such as ```require('./foo/bar')``` in your 
+  ```makfyfile.js``` you should also export ```dependencies: [ './foo/bar' ]```, but **not** any global requires.
+
+ ### ```options?: {profile?, showTime?}```
  ```options``` is an optional object that can be exported to set the default of some options:
  * ```profile: boolean```
  
@@ -317,7 +324,8 @@ In more detail:
   > **Notes:**
   > - If you generate two different targets based on the same source files (for example a production vs a debug bundle) make sure to use different context names for each one.
   > - This function will create files inside a ```.makfy-cache``` folder at the end of every successful run.
-  > - If you change the ```makfyfile.js``` contents then a clean run will be assumed. This is done so you don't have to manually clean the cache folder every time you make changes to it.     
+  > - If you change the ```makfyfile.js``` contents then a clean run will be assumed. This is done so you don't have to manually clean the cache folder every time you make changes to it.
+  >   If you require other custom (made by you) scripts you should add them to the dependencies array to ensure you get proper cache invalidation when you change those as well.      
 
 * ```cleanCache: () => void```
   > Cleans the ```.makfy-cache``` folder. Use it if you want to make sure all next calls to ```getFileChangesAsync``` work as if it was a clean run.

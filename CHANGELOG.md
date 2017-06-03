@@ -1,5 +1,8 @@
 # makfy changelog
 
+## 1.1.10
+- added a dependencies export that allows to require other commands and keep the cache in sync
+
 ## 1.1.9
 - symlinks are now properly followed when using glob patterns
 

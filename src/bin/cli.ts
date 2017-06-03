@@ -12,7 +12,7 @@ import { Commands } from '../lib/schema/commands';
 import { PartialOptions } from '../lib/schema/options';
 import { resetColors } from '../lib/utils/console';
 import { errorMessageForObject, formatContextId } from '../lib/utils/formatting';
-import { isObject } from '../lib/utils/typeChecking';
+import { isObject, isStringArray } from '../lib/utils/typeChecking';
 
 const entries = require('object.entries');
 
@@ -118,9 +118,38 @@ const loadFile = (fileToLoad: FileToLoad, loadContents: boolean): LoadFileResult
       return;
     }
 
+    let contents = undefined;
+    if (loadContents) {
+      contents = fs.readFileSync(absoluteFilename, 'utf8');
+      const deps = fileExports.dependencies;
+      if (deps) {
+        if (!isStringArray(deps)) {
+          exitWithError(ErrCode.UserFileError, `export dependencies must be a string array with paths to files`);
+        }
+
+        const rootDir = path.dirname(absoluteFilename);
+        for (const dep of deps) {
+          let absDepFilename;
+          if (path.isAbsolute(dep)) {
+            absDepFilename = dep;
+          }
+          else {
+            absDepFilename = path.join(rootDir, dep);
+          }
+
+          if (!fs.existsSync(absDepFilename) && !absDepFilename.toLowerCase().endsWith(('.js'))) {
+            absDepFilename += '.js';
+          }
+
+          contents += fs.readFileSync(absDepFilename, 'utf8');
+        }
+      }
+    }
+
+
     return {
       exports: fileExports,
-      contents: loadContents ? fs.readFileSync(absoluteFilename, 'utf-8') : undefined
+      contents: contents
     };
   }
   catch (err) {

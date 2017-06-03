@@ -569,11 +569,11 @@ const execCommandStringAsync = async (command: string, context: ExecContext, com
           // standard exit
 
           // read the temp file with the new cwd
-          context.cwd = fs.readFileSync(cwdTmpFilename, 'utf-8').replace(/\r?\n|\r/g, '').trim();
+          context.cwd = fs.readFileSync(cwdTmpFilename, 'utf8').replace(/\r?\n|\r/g, '').trim();
 
           // read the temp file with the new env
           const newEnv = {};
-          fs.readFileSync(envTmpFilename, 'utf-8').replace(/\r/g, '').trim().split('\n').forEach((envLine) => {
+          fs.readFileSync(envTmpFilename, 'utf8').replace(/\r/g, '').trim().split('\n').forEach((envLine) => {
             if (envLine.trim().length > 0) {
               const pieces = envLine.split('=');
               const name = pieces[0];

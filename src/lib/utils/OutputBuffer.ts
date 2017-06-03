@@ -33,7 +33,7 @@ export class OutputBuffer {
     if (chalk.stripColor(str).length > 0) {
       this._output.push({
         type: type,
-        data: Buffer.from(str, 'utf-8')
+        data: Buffer.from(str, 'utf8')
       });
     }
   }
@@ -55,7 +55,7 @@ export class OutputBuffer {
 
       const {socket, color} = socketConfig;
 
-      let str = b.data.toString('utf-8');
+      let str = b.data.toString('utf8');
 
       str = str.split('\r').join('');
 

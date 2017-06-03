@@ -133,7 +133,7 @@ export const getHashCollectionDelta = (oldHashCollection: HashCollection | undef
  */
 export const loadHashCollectionFileAsync = async (hashFilePath: string): Promise<HashCollection> => {
   return await new Promise<HashCollection>((resolve, reject) => {
-    fs.readFile(hashFilePath, 'utf-8', (err, data) => {
+    fs.readFile(hashFilePath, 'utf8', (err, data) => {
       if (err) {
         reject(err);
         return;
