@@ -2,7 +2,7 @@ const glob = require('glob');
 
 export const unrollGlobPatternAsync = async (globPattern: string): Promise<string[]> => {
   return await new Promise<string[]>((resolve, reject) => {
-    glob(globPattern, { strict: true, nodir: true }, (err: Error | null, files: string[]) => {
+    glob(globPattern, { strict: true, nodir: true, follow: true }, (err: Error | null, files: string[]) => {
       if (err) {
         reject(err);
         return;

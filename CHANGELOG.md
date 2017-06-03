@@ -1,5 +1,8 @@
 # makfy changelog
 
+## 1.1.9
+- symlinks are now properly followed when using glob patterns
+
 ## 1.1.8
 - fixed hanging on windows sometimes when the child process tries to access stdin
 
