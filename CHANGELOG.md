@@ -1,5 +1,8 @@
 # makfy changelog
 
+## 1.1.11
+- added utils.makfyContext to get info about the file makfy is running
+
 ## 1.1.10
 - added a dependencies export that allows to require other commands and keep the cache in sync
 

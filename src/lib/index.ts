@@ -52,11 +52,19 @@ export const runCommandAsync = async (runCommandOptions: RunCommandOptions) => {
   const getFileChangesResults = {};
 
   const execContext: ExecContext = {
+    // for MakfyContext
+    commandName: commandName,
+    commandArgs: commandArgs || {},
     commands: commands,
-    parsedCommands: parsedCommands,
+    options: {
+      ...parsedOptions,
+      colorMode: chalk.supportsColor
+    },
     makfyFilename: makfyFilename,
+
+    // for ExecContext
+    parsedCommands: parsedCommands,
     makfyFileContents: makfyFileContents,
-    options: parsedOptions,
     syncMode: true,
     idStack: [],
     getFileChangesResults: getFileChangesResults,

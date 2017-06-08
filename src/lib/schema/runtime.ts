@@ -1,3 +1,6 @@
+import { Commands } from './commands';
+import { FullOptions } from './options';
+
 export interface ExecObject {
   _: string; // command name
   args?: {
@@ -13,6 +16,10 @@ export interface GetFileChangesOptions {
   log: boolean;
 }
 
+export interface ExtendedFullOptions extends FullOptions {
+  colorMode: boolean;
+}
+
 export interface GetFileChangesResult {
   hasChanges: boolean;
   cleanRun: boolean;
@@ -22,7 +29,16 @@ export interface GetFileChangesResult {
   unmodified: string[];
 }
 
+export interface MakfyContext {
+  commandName: string;
+  commandArgs: object;
+  commands: Commands;
+  options: ExtendedFullOptions;
+  makfyFilename: string;
+}
+
 export interface ExecUtils {
+  makfyContext: MakfyContext;
   escape(...parts: string[]): string;
   fixPath(path: string, style: 'autodetect' | 'windows' | 'posix'): string;
   setEnvVar(name: string, value: string | undefined): string;

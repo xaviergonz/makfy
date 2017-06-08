@@ -7,9 +7,8 @@ import * as yargs from 'yargs';
 import { MakfyError, RunError } from './errors';
 import { ParsedCommand } from './parser/command';
 import { ParsedCommands } from './parser/commands';
-import { Command, Commands } from './schema/commands';
-import { FullOptions } from './schema/options';
-import { ExecCommand, ExecFunction, ExecObject, ExecUtils, GetFileChangesResult } from './schema/runtime';
+import { Command } from './schema/commands';
+import { ExecCommand, ExecFunction, ExecObject, ExecUtils, GetFileChangesResult, MakfyContext } from './schema/runtime';
 import { blockingConsoleError, blockingConsoleLog, resetColors } from './utils/console';
 import { formatContextId, formatContextIdStack } from './utils/formatting';
 import { unrollGlobPatternsAsync } from './utils/globs';
@@ -39,11 +38,8 @@ export interface CachedGetFileChangesResult {
   newHashCollection: HashCollection;
 }
 
-export interface ExecContext {
-  commands: Commands;
+export interface ExecContext extends MakfyContext {
   parsedCommands: ParsedCommands;
-  options: FullOptions;
-  makfyFilename: string;
   makfyFileContents?: string;
 
   idStack: string[];
@@ -111,6 +107,14 @@ export const runCommandAsync = async (commandName: string, commandArgs: object, 
   const execFunc = createExecFunctionContext(baseContext, baseIdStack, true);
 
   const utils: ExecUtils = {
+    makfyContext: {
+      commandName: baseContext.commandName,
+      commandArgs: baseContext.commandArgs,
+      commands: baseContext.commands,
+      options: baseContext.options,
+      makfyFilename: baseContext.makfyFilename,
+    },
+
     getFileChangesAsync: async (contextName, globPatterns, options?) => {
       if (typeof contextName !== 'string') {
         throw new MakfyError(`'contextName' argument must be a string`, baseContext);

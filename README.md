@@ -330,6 +330,29 @@ In more detail:
 * ```cleanCache: () => void```
   > Cleans the ```.makfy-cache``` folder. Use it if you want to make sure all next calls to ```getFileChangesAsync``` work as if it was a clean run.
 
+* ```makfyContext: object```
+  > An object with the makfy context, this is, how the makfy file was run. Its contents are:
+  > ```js
+  > {
+  >   // main command name (e.g. the command that was run from the command line)
+  >   commandName: string;
+  >
+  >   // main command args and their computed values
+  >   commandArgs: object;
+  >
+  >   // commands object as exported from the makfyfile
+  >   commands: Commands;
+  >
+  >   // options object with default values already filled in if missing from the exports
+  >   // includes a colorMode boolean to know if makfy is running in color mode or not
+  >   options: Options & { colorMode: boolean };  
+  >
+  >   // makfyfile filename as specified by the -f argument (defaults to makfyfile.js)
+  >   // hint: to get the absolute path use path.resolve(makfyFilename)
+  >   makfyFilename: string;
+  > }
+  > ```
+  > **Do not modify this object**
 
 ## FAQ
 
