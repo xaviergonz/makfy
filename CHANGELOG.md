@@ -1,5 +1,9 @@
 # makfy changelog
 
+## 1.2.0
+- added support for commands/args/enum arg values with '-', '_' and ':' characters
+- 'fooBar' names are no longer automatically transformed to 'foo-bar' and vice-versa
+
 ## 1.1.11
 - added utils.makfyContext to get info about the file makfy is running
 

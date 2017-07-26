@@ -1,5 +1,5 @@
 import { Schema } from 'jsonschema';
-import { alphanumericPattern } from './';
+import { alphanumericExtendedPattern } from './';
 import { ArgDefinition, argsSchema } from './args';
 import { ExecFunction, ExecUtils } from './runtime';
 
@@ -40,7 +40,7 @@ export const commandsSchema: Schema = {
   id: '/commands',
   type: 'object',
   patternProperties: {
-    [alphanumericPattern]: commandSchema
+    [alphanumericExtendedPattern]: commandSchema
   },
   additionalProperties: false,
 };

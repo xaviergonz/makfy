@@ -6,7 +6,7 @@ import * as path from 'path';
 import * as yargs from 'yargs';
 import { listAllCommands, listCommand, runCommandAsync } from '../lib/';
 import { MakfyError, RunError } from '../lib/errors';
-import { alphanumericPattern } from '../lib/schema';
+import { alphanumericExtendedPattern } from '../lib/schema';
 import { reservedArgNames } from '../lib/schema/args';
 import { Commands } from '../lib/schema/commands';
 import { PartialOptions } from '../lib/schema/options';
@@ -220,9 +220,9 @@ const mainAsync = async () => {
       delete commandArgs[resArg];
     }
 
-    // remove non alphanumeric args (because yargs transforms fooBar into foo-bar and fooBar)
+    // remove non alphanumeric extended args
     for (const argName of Object.keys(argv)) {
-      if (!new RegExp(alphanumericPattern).test(argName)) {
+      if (!new RegExp(alphanumericExtendedPattern).test(argName)) {
         delete commandArgs[argName];
       }
     }

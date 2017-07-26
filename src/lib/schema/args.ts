@@ -1,5 +1,5 @@
 import { Schema } from 'jsonschema';
-import { alphanumericPattern } from './';
+import { alphanumericExtendedPattern } from './';
 
 export const reservedArgNames = [
   'f', 'file',
@@ -28,7 +28,10 @@ export const flagArgSchema: Schema = {
       type: 'string',
       'enum': [ 'f', 'flag' ] // tslint:disable-line:object-literal-key-quotes
     },
-    byDefault: [ false ],
+    byDefault: {
+      type: 'boolean',
+      'enum': [ false ] // tslint:disable-line:object-literal-key-quotes
+    },
     desc: {
       type: 'string'
     },
@@ -88,12 +91,12 @@ export const enumArgSchema: Schema = {
       uniqueItems: true,
       items: {
         type: 'string',
-        pattern: alphanumericPattern
+        pattern: alphanumericExtendedPattern
       }
     },
     byDefault: {
       type: 'string',
-      pattern: alphanumericPattern,
+      pattern: alphanumericExtendedPattern,
       matchesValues: true
     } as Schema,
     desc: {
@@ -120,7 +123,7 @@ export const argsSchema: Schema = {
   id: '/args',
   type: 'object',
   patternProperties: {
-    [alphanumericPattern]: argSchema,
+    [alphanumericExtendedPattern]: argSchema,
   },
   additionalProperties: false,
   forbiddenPropertyNames: reservedArgNames
