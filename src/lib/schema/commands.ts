@@ -1,7 +1,9 @@
-import { Schema } from 'jsonschema';
-import { alphanumericExtendedPattern } from './';
-import { ArgDefinition, argsSchema } from './args';
-import { ExecFunction, ExecUtils } from './runtime';
+// tslint:disable:no-object-literal-type-assertion
+
+import { Schema } from "jsonschema";
+import { alphanumericExtendedPattern } from "./";
+import { ArgDefinition, argsSchema } from "./args";
+import { ExecFunction, ExecUtils } from "./runtime";
 
 export interface Command {
   desc?: string;
@@ -13,34 +15,33 @@ export interface Command {
 }
 
 export const commandSchema: Schema = {
-  id: '/command',
-  type: 'object',
-  required: ['run'],
+  id: "/command",
+  type: "object",
+  required: ["run"],
   properties: {
     desc: {
-      type: 'string'
+      type: "string"
     },
     args: argsSchema,
     run: {
       isFunction: true
     } as Schema,
     internal: {
-      type: 'boolean'
+      type: "boolean"
     }
   },
-  additionalProperties: false,
+  additionalProperties: false
 };
-
 
 export interface Commands {
   [commandName: string]: Command;
 }
 
 export const commandsSchema: Schema = {
-  id: '/commands',
-  type: 'object',
+  id: "/commands",
+  type: "object",
   patternProperties: {
     [alphanumericExtendedPattern]: commandSchema
   },
-  additionalProperties: false,
+  additionalProperties: false
 };

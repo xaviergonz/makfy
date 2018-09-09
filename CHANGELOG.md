@@ -1,35 +1,48 @@
 # makfy changelog
 
+## 1.3.0
+
+- updated dependencies
+- added prettier, better linting, etc
+
 ## 1.2.0
-- added support for commands/args/enum arg values with '-', '_' and ':' characters
+
+- added support for commands/args/enum arg values with '-', '\_' and ':' characters
 - 'fooBar' names are no longer automatically transformed to 'foo-bar' and vice-versa
 
 ## 1.1.11
+
 - added utils.makfyContext to get info about the file makfy is running
 
 ## 1.1.10
+
 - added a dependencies export that allows to require other commands and keep the cache in sync
 
 ## 1.1.9
+
 - symlinks are now properly followed when using glob patterns
 
 ## 1.1.8
+
 - fixed hanging on windows sometimes when the child process tries to access stdin
 
 ## 1.1.7
+
 - added expandGlobs to utils
 - made parallel execution have a limited concurrency for better performance
 
 ## 1.1.5
+
 - added a setEnvVar method to utils
 - added a FAQ with recommended CLI packages for usual operations
 
 ## 1.1.4
+
 - added support for MINGW/cygwin (e.g. git-bash) on windows
 - added fixPath to utils
 - environment variables and current directory are now persisted under the same exec:
-  - use ```set x=y``` on windows 
-  - use ```export x=y``` on unix
+  - use `set x=y` on windows
+  - use `export x=y` on unix
   - if you want to persist it on different execs then do:
     ```js
     const a = await exec(...);

@@ -1,9 +1,9 @@
 export const isObject = (obj: any) => {
-  return obj !== null && typeof obj === 'object';
+  return obj !== null && typeof obj === "object";
 };
 
 export const isFunction = (func: any) => {
-  return typeof func === 'function';
+  return typeof func === "function";
 };
 
 export const isStringArray = (arr: any) => {
@@ -11,7 +11,7 @@ export const isStringArray = (arr: any) => {
     return false;
   }
   for (const e of arr) {
-    if (typeof e !== 'string') {
+    if (typeof e !== "string") {
       return false;
     }
   }

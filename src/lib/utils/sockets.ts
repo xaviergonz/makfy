@@ -5,9 +5,8 @@ export const socketFlushWriteAsync = async (socket: Socket, str: string) => {
     const flushed = socket.write(str);
     if (flushed) {
       resolve();
-    }
-    else {
-      socket.once('drain', resolve);
+    } else {
+      socket.once("drain", resolve);
     }
   });
 };

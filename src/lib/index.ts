@@ -1,19 +1,20 @@
-import * as chalk from 'chalk';
-import { MakfyError, RunError } from './errors';
-import * as execRuntime from './execRuntime';
-import { ExecContext } from './execRuntime';
-import { ParsedArgDefinition } from './parser/commandArg';
-import { parseCommands } from './parser/commands';
-import { parseOptions } from './parser/options';
-import { Commands } from './schema/commands';
-import { FullOptions, PartialOptions } from './schema/options';
-import { resetColors } from './utils/console';
-import { errorMessageForObject, getTimeString } from './utils/formatting';
-import { saveHashCollectionFileAsync } from './utils/hash';
-import { TextWriter } from './utils/TextWriter';
-import { isObject } from './utils/typeChecking';
-const prettyHrTime = require('pretty-hrtime');
-const entries = require('object.entries');
+import chalk, { Level } from "chalk";
+import { MakfyError, RunError } from "./errors";
+import * as execRuntime from "./execRuntime";
+import { ParsedArgDefinition } from "./parser/commandArg";
+import { parseCommands } from "./parser/commands";
+import { parseOptions } from "./parser/options";
+import { Commands } from "./schema/commands";
+import { FullOptions, PartialOptions } from "./schema/options";
+import { resetColors } from "./utils/console";
+import { errorMessageForObject, getTimeString } from "./utils/formatting";
+import { saveHashCollectionFileAsync } from "./utils/hash";
+import { TextWriter } from "./utils/TextWriter";
+import { isObject } from "./utils/typeChecking";
+import stripColor = require("strip-ansi");
+
+const prettyHrTime = require("pretty-hrtime");
+type ExecContext = execRuntime.ExecContext;
 
 export interface RunCommandOptions {
   commands: Commands;
@@ -25,10 +26,17 @@ export interface RunCommandOptions {
 }
 
 export const runCommandAsync = async (runCommandOptions: RunCommandOptions) => {
-  const {commands, commandName, commandArgs, options, makfyFilename, makfyFileContents} = runCommandOptions;
+  const {
+    commands,
+    commandName,
+    commandArgs,
+    options,
+    makfyFilename,
+    makfyFileContents
+  } = runCommandOptions;
 
   if (!commandName) {
-    throw new MakfyError('command name missing', undefined);
+    throw new MakfyError("command name missing", undefined);
   }
 
   const parsedOptions: FullOptions = parseOptions(options, false);
@@ -41,15 +49,17 @@ export const runCommandAsync = async (runCommandOptions: RunCommandOptions) => {
   }
 
   if (command.internal) {
-    throw new MakfyError('internal commands cannot be run directly', undefined);
+    throw new MakfyError("internal commands cannot be run directly", undefined);
   }
 
-  console.log(getTimeString(parsedOptions.showTime) + chalk.bgBlue.bold.white(`${commandName} - running...`));
+  console.log(
+    getTimeString(parsedOptions.showTime) + chalk.bgBlue.bold.white(`${commandName} - running...`)
+  );
 
   // run
   const startTime = process.hrtime();
 
-  const getFileChangesResults = {};
+  const getFileChangesResults: ExecContext["getFileChangesResults"] = {};
 
   const execContext: ExecContext = {
     // for MakfyContext
@@ -58,7 +68,7 @@ export const runCommandAsync = async (runCommandOptions: RunCommandOptions) => {
     commands: commands,
     options: {
       ...parsedOptions,
-      colorMode: chalk.supportsColor
+      colorMode: chalk.supportsColor.level !== Level.None
     },
     makfyFilename: makfyFilename,
 
@@ -67,7 +77,7 @@ export const runCommandAsync = async (runCommandOptions: RunCommandOptions) => {
     makfyFileContents: makfyFileContents,
     syncMode: true,
     idStack: [],
-    getFileChangesResults: getFileChangesResults,
+    getFileChangesResults: getFileChangesResults
   };
 
   try {
@@ -75,29 +85,31 @@ export const runCommandAsync = async (runCommandOptions: RunCommandOptions) => {
 
     // on success save new caches in parallel
     const savePromises = [];
-    for (const [key, value] of entries(getFileChangesResults)) {
+    for (const [key, value] of Object.entries(getFileChangesResults)) {
       savePromises.push(saveHashCollectionFileAsync(key, value.newHashCollection));
     }
     await Promise.all(savePromises);
-  }
-  catch (err) {
+  } catch (err) {
     if (!(err instanceof RunError) && !(err instanceof MakfyError)) {
       // an error most probably thrown by the execution of run
       throw new MakfyError(err.message, undefined);
-    }
-    else {
+    } else {
       throw err;
     }
   }
 
   const endTime = process.hrtime(startTime);
-  console.log('\n' + getTimeString(parsedOptions.showTime) + chalk.bold.green(`'${commandName}' done in ${prettyHrTime(endTime)}`));
+  console.log(
+    "\n" +
+      getTimeString(parsedOptions.showTime) +
+      chalk.bold.green(`'${commandName}' done in ${prettyHrTime(endTime)}`)
+  );
   resetColors();
 };
 
 export const listCommand = (commands: Commands, commandName: string, listArguments = true) => {
   if (!commandName) {
-    throw new MakfyError('missing command name', undefined);
+    throw new MakfyError("missing command name", undefined);
   }
 
   const w = new TextWriter();
@@ -115,7 +127,7 @@ export const listCommand = (commands: Commands, commandName: string, listArgumen
 
   const aw = new TextWriter();
   if (listArguments) {
-    const argDefsList: [string, ParsedArgDefinition][] = entries(parsedCommand.argDefinitions);
+    const argDefsList = Object.entries(parsedCommand.argDefinitions);
     // sort alphabetically
     argDefsList.sort((a, b) => {
       return a[0].toLowerCase().localeCompare(b[0].toLowerCase());
@@ -126,26 +138,26 @@ export const listCommand = (commands: Commands, commandName: string, listArgumen
       const optionalArgs = argDefsList.filter((e) => !e[1].required);
 
       const formatLeftHelp = (argDef: ParsedArgDefinition) => {
-        const {required, leftHelp} = argDef;
-        const leftBracket = required ? '' : '[';
-        const rightBracket = required ? '' : ']';
+        const { required, leftHelp } = argDef;
+        const leftBracket = required ? "" : "[";
+        const rightBracket = required ? "" : "]";
 
         return chalk.bold.gray(` ${leftBracket}${leftHelp}${rightBracket}`);
       };
 
       // find left help side max length
-      const lengths = argDefsList.map((entry) => chalk.stripColor(formatLeftHelp(entry[1])).length);
+      const lengths = argDefsList.map((entry) => stripColor(formatLeftHelp(entry[1])).length);
       const maxLeftLength = Math.max(...lengths) + 4;
 
       const writeArgHelp = (argDef: [string, ParsedArgDefinition]) => {
-        const {rightHelp} = argDef[1];
+        const { rightHelp } = argDef[1];
 
         const formattedLeftHelp = formatLeftHelp(argDef[1]);
         let help = formattedLeftHelp;
 
         if (rightHelp) {
-          for (let i = chalk.stripColor(formattedLeftHelp).length; i < maxLeftLength; i++) {
-            help += ' ';
+          for (let i = stripColor(formattedLeftHelp).length; i < maxLeftLength; i++) {
+            help += " ";
           }
           help += rightHelp;
         }
@@ -165,7 +177,6 @@ export const listCommand = (commands: Commands, commandName: string, listArgumen
           writeArgHelp(e);
         });
       }
-
     }
   }
 
@@ -174,17 +185,20 @@ export const listCommand = (commands: Commands, commandName: string, listArgumen
     w.writeLine(chalk.bold.gray(` - ${command.desc}`));
   }
   w.write(aw.output);
-  w.writeLine(chalk.reset(''));
+  w.writeLine(chalk.reset(""));
 
   return w.output;
 };
 
 export const listAllCommands = (commands: Commands, listArguments = true, listInternal = false) => {
   if (!isObject(commands)) {
-    throw new MakfyError(errorMessageForObject(['commands'], `must be an object (did you export it?)`), undefined);
+    throw new MakfyError(
+      errorMessageForObject(["commands"], `must be an object (did you export it?)`),
+      undefined
+    );
   }
 
-  let output = '';
+  let output = "";
 
   for (const commandName of Object.keys(commands)) {
     const command = commands[commandName];

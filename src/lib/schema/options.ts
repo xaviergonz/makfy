@@ -1,4 +1,4 @@
-import { Schema } from 'jsonschema';
+import { Schema } from "jsonschema";
 
 export interface FullOptions {
   profile: boolean;
@@ -8,17 +8,16 @@ export interface FullOptions {
 export type PartialOptions = Partial<FullOptions>;
 
 export const optionsSchema: Schema = {
-  id: '/options',
-  type: 'object',
+  id: "/options",
+  type: "object",
   required: [],
   properties: {
     profile: {
-      type: 'boolean'
+      type: "boolean"
     },
     showTime: {
-      type: 'boolean'
+      type: "boolean"
     }
   },
-  additionalProperties: false,
+  additionalProperties: false
 };
-

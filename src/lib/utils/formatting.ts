@@ -1,18 +1,20 @@
-import * as chalk from 'chalk';
-import { ExecContext } from '../execRuntime';
+import chalk from "chalk";
+import { ExecContext } from "../execRuntime";
 import Socket = NodeJS.Socket;
 
 export const getTimeString = (show: boolean) => {
-  if (!show) return '';
+  if (!show) {
+    return "";
+  }
   return chalk.bold.gray(`[${new Date(new Date().getTime()).toLocaleTimeString()}] `);
 };
 
 export const errorMessageForObject = (parts: (string | undefined)[], message: string) => {
-  return `${parts.filter((e) => e !== undefined).join('.')} - ${message}`;
+  return `${parts.filter((e) => e !== undefined).join(".")} - ${message}`;
 };
 
 export const argNameToDashedArgName = (argName: string) => {
-  return (argName.length <= 1 ? '-' : '--') + argName;
+  return (argName.length <= 1 ? "-" : "--") + argName;
 };
 
 // TODO: remove this?
@@ -31,15 +33,14 @@ export const objectToCommandLineArgs = (obj: any) => {
 
   for (const argName of Object.keys(obj)) {
     switch (argName) {
-      case '$0':
-      case '_':
+      case "$0":
+      case "_":
         break;
       default:
         const argValue = obj[argName];
         if (argValue === undefined || argValue === null) {
           arr.push(argNameToDashedArgName(argName));
-        }
-        else {
+        } else {
           arr.push(...[argNameToDashedArgName(argName), argValue.toString()]);
         }
         break;
@@ -50,7 +51,7 @@ export const objectToCommandLineArgs = (obj: any) => {
 };
 
 export const formatContextIdStack = (idStack: string[], showTime: boolean) => {
-  return getTimeString(showTime) + idStack.join(chalk.bold.gray('/')) + '  ';
+  return getTimeString(showTime) + idStack.join(chalk.bold.gray("/")) + "  ";
 };
 
 export const formatContextId = (context: ExecContext) => {

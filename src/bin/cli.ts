@@ -1,22 +1,21 @@
 #! /usr/bin/env node
 
-import * as chalk from 'chalk';
-import * as fs from 'fs';
-import * as path from 'path';
-import * as yargs from 'yargs';
-import { listAllCommands, listCommand, runCommandAsync } from '../lib/';
-import { MakfyError, RunError } from '../lib/errors';
-import { alphanumericExtendedPattern } from '../lib/schema';
-import { reservedArgNames } from '../lib/schema/args';
-import { Commands } from '../lib/schema/commands';
-import { PartialOptions } from '../lib/schema/options';
-import { resetColors } from '../lib/utils/console';
-import { errorMessageForObject, formatContextId } from '../lib/utils/formatting';
-import { isObject, isStringArray } from '../lib/utils/typeChecking';
+import chalk from "chalk";
+import * as fs from "fs";
+import * as path from "path";
+import * as yargs from "yargs";
+import { listAllCommands, listCommand, runCommandAsync } from "../lib/";
+import { MakfyError, RunError } from "../lib/errors";
+import { alphanumericExtendedPattern } from "../lib/schema";
+import { reservedArgNames } from "../lib/schema/args";
+import { Commands } from "../lib/schema/commands";
+import { PartialOptions } from "../lib/schema/options";
+import { resetColors } from "../lib/utils/console";
+import { errorMessageForObject, formatContextId } from "../lib/utils/formatting";
+import { isObject, isStringArray } from "../lib/utils/typeChecking";
+import stripColor = require("strip-ansi");
 
-const entries = require('object.entries');
-
-const programName = 'makfy';
+const programName = "makfy";
 const argv = yargs.argv;
 
 const enum ErrCode {
@@ -28,13 +27,13 @@ const enum ErrCode {
 const exitWithError = (code: ErrCode, message?: string, prefix?: string) => {
   resetColors();
   if (message) {
-    console.error((prefix ? prefix : '') + chalk.bold.red('[ERROR] ' + message));
+    console.error((prefix ? prefix : "") + chalk.bold.red("[ERROR] " + message));
   }
   process.exit(code);
 };
 
-const defaultFilename = programName + 'file.js';
-const version = require('../../package.json').version;
+const defaultFilename = programName + "file.js";
+const version = require("../../package.json").version;
 
 const printProgramHelp = () => {
   console.log(`${programName} v${version}`);
@@ -42,33 +41,36 @@ const printProgramHelp = () => {
   console.log(`usage:`);
 
   const pad = (str: string) => {
-    str = ' ' + str;
-    for (let i = chalk.stripColor(str).length; i < 34; i++) {
-      str += ' ';
+    str = " " + str;
+    for (let i = stripColor(str).length; i < 34; i++) {
+      str += " ";
     }
     return str;
   };
 
   const logHelp1 = (what: string, how: string, showFile: boolean) => {
     const left = pad(chalk.bold.green(` - ${what}`));
-    const right = chalk.bold.gray(`${programName} ${showFile ? chalk.bold.magenta(`[-f ${defaultFilename}] `) : ''}${chalk.bold.magenta(how)}`);
+    const right = chalk.bold.gray(
+      `${programName} ${
+        showFile ? chalk.bold.magenta(`[-f ${defaultFilename}] `) : ""
+      }${chalk.bold.magenta(how)}`
+    );
     console.log(left + right);
   };
 
-  logHelp1('run command:', `<command> ...commandOptions`, true);
-  logHelp1('list all commands:', `--list`, true);
-  logHelp1('list command:', ` <command> --list`, true);
-  logHelp1('show help (this):', `[--help]`, false);
+  logHelp1("run command:", `<command> ...commandOptions`, true);
+  logHelp1("list all commands:", `--list`, true);
+  logHelp1("list command:", ` <command> --list`, true);
+  logHelp1("show help (this):", `[--help]`, false);
 
   const logArgHelp = (argName: string, desc: string) => {
-    const left = pad(' ' + chalk.bold.gray(`[${chalk.bold.magenta(argName)}]`));
+    const left = pad(" " + chalk.bold.gray(`[${chalk.bold.magenta(argName)}]`));
     console.log(left + chalk.bold.gray(desc));
-
   };
 
-  logArgHelp('--profile', 'force show the time it takes to run each subcommand');
-  logArgHelp('--show-time', 'force show the current time');
-  logArgHelp('--color/--no-color', 'force colored/uncolored output (default: autodetect)');
+  logArgHelp("--profile", "force show the time it takes to run each subcommand");
+  logArgHelp("--show-time", "force show the current time");
+  logArgHelp("--color/--no-color", "force colored/uncolored output (default: autodetect)");
 };
 
 interface FileToLoad {
@@ -107,7 +109,7 @@ interface LoadFileResult {
 }
 
 const loadFile = (fileToLoad: FileToLoad, loadContents: boolean): LoadFileResult | undefined => {
-  const {filename, absoluteFilename} = fileToLoad;
+  const { filename, absoluteFilename } = fileToLoad;
 
   // try to load the user file
   try {
@@ -118,13 +120,16 @@ const loadFile = (fileToLoad: FileToLoad, loadContents: boolean): LoadFileResult
       return;
     }
 
-    let contents = undefined;
+    let contents;
     if (loadContents) {
-      contents = fs.readFileSync(absoluteFilename, 'utf8');
+      contents = fs.readFileSync(absoluteFilename, "utf8");
       const deps = fileExports.dependencies;
       if (deps) {
         if (!isStringArray(deps)) {
-          exitWithError(ErrCode.UserFileError, `export dependencies must be a string array with paths to files`);
+          exitWithError(
+            ErrCode.UserFileError,
+            `export dependencies must be a string array with paths to files`
+          );
         }
 
         const rootDir = path.dirname(absoluteFilename);
@@ -132,27 +137,24 @@ const loadFile = (fileToLoad: FileToLoad, loadContents: boolean): LoadFileResult
           let absDepFilename;
           if (path.isAbsolute(dep)) {
             absDepFilename = dep;
-          }
-          else {
+          } else {
             absDepFilename = path.join(rootDir, dep);
           }
 
-          if (!fs.existsSync(absDepFilename) && !absDepFilename.toLowerCase().endsWith(('.js'))) {
-            absDepFilename += '.js';
+          if (!fs.existsSync(absDepFilename) && !absDepFilename.toLowerCase().endsWith(".js")) {
+            absDepFilename += ".js";
           }
 
-          contents += fs.readFileSync(absDepFilename, 'utf8');
+          contents += fs.readFileSync(absDepFilename, "utf8");
         }
       }
     }
-
 
     return {
       exports: fileExports,
       contents: contents
     };
-  }
-  catch (err) {
+  } catch (err) {
     exitWithError(ErrCode.UserFileError, `error requiring ${filename}:\n${err.stack.toString()}`);
     return;
   }
@@ -177,23 +179,27 @@ const mainAsync = async () => {
     const commandName = argv._.length > 0 ? argv._[0].trim() : undefined;
     if (commandName) {
       if (argv._.length > 1) {
-        exitWithError(ErrCode.CliError, `specify only one command to list or don't specify any commands to list them all`);
+        exitWithError(
+          ErrCode.CliError,
+          `specify only one command to list or don't specify any commands to list them all`
+        );
         return;
       }
 
       execute = async () => {
-        const output = chalk.bold.gray(`listing '${commandName}' command...\n\n`) + listCommand(exports.commands, commandName, true);
+        const output =
+          chalk.bold.gray(`listing '${commandName}' command...\n\n`) +
+          listCommand(exports.commands, commandName, true);
         console.log(output);
       };
-    }
-    else {
+    } else {
       execute = async () => {
-        const output = chalk.bold.gray('listing all commands...\n\n') + listAllCommands(exports.commands, true);
+        const output =
+          chalk.bold.gray("listing all commands...\n\n") + listAllCommands(exports.commands, true);
         console.log(output);
       };
     }
-  }
-  else {
+  } else {
     // run
     if (argv._.length <= 0) {
       printProgramHelp();
@@ -202,7 +208,7 @@ const mainAsync = async () => {
     }
 
     if (argv._.length > 1) {
-      exitWithError(ErrCode.CliError, 'only one command can be run at the same time');
+      exitWithError(ErrCode.CliError, "only one command can be run at the same time");
       return;
     }
 
@@ -212,7 +218,7 @@ const mainAsync = async () => {
     const commandName = argv._[0].trim();
 
     // remove reserved args
-    const commandArgs = Object.assign({}, argv);
+    const commandArgs = { ...argv };
     delete commandArgs._;
     delete commandArgs.$0;
 
@@ -232,7 +238,10 @@ const mainAsync = async () => {
       options = {};
     }
     if (!isObject(options)) {
-      exitWithError(ErrCode.UserFileError, errorMessageForObject(['options'], `must be an object or undefined`));
+      exitWithError(
+        ErrCode.UserFileError,
+        errorMessageForObject(["options"], `must be an object or undefined`)
+      );
       return;
     }
     if (argv.profile) {
@@ -256,22 +265,18 @@ const mainAsync = async () => {
 
   try {
     await execute();
-  }
-  catch (err) {
+  } catch (err) {
     resetColors();
     if (err instanceof MakfyError) {
-      const prefix = (err.execContext ? formatContextId(err.execContext) : undefined);
+      const prefix = err.execContext ? formatContextId(err.execContext) : undefined;
       exitWithError(ErrCode.UserFileError, err.message, prefix);
-    }
-    else if (err instanceof RunError) {
+    } else if (err instanceof RunError) {
       // the message should be printed already
       exitWithError(ErrCode.ExecError);
-    }
-    else {
+    } else {
       throw err;
     }
-  }
-  finally {
+  } finally {
     resetColors();
   }
 };
@@ -279,7 +284,6 @@ const mainAsync = async () => {
 try {
   //noinspection JSIgnoredPromiseFromCall
   mainAsync();
-}
-catch (err) {
+} catch (err) {
   throw err;
 }

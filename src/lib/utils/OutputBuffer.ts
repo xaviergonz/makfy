@@ -1,6 +1,7 @@
 import Socket = NodeJS.Socket;
-import * as chalk from 'chalk';
-import { socketFlushWriteAsync } from './sockets';
+import chalk from "chalk";
+import { socketFlushWriteAsync } from "./sockets";
+import stripColor = require("strip-ansi");
 
 export interface OutputBufferData {
   type: string;
@@ -20,8 +21,7 @@ export class OutputBuffer {
   constructor(
     private readonly _linePrefix: string,
     private readonly _socketConfig: OutputBufferSocketConfig
-  ) {
-  }
+  ) {}
 
   write(bufData: OutputBufferData) {
     if (bufData.data.length > 0) {
@@ -30,10 +30,10 @@ export class OutputBuffer {
   }
 
   writeString(type: string, str: string) {
-    if (chalk.stripColor(str).length > 0) {
+    if (stripColor(str).length > 0) {
       this._output.push({
         type: type,
-        data: Buffer.from(str, 'utf8')
+        data: Buffer.from(str, "utf8")
       });
     }
   }
@@ -42,7 +42,7 @@ export class OutputBuffer {
     const linePrefix = this._linePrefix;
 
     let lastEndedInNewLine = true;
-    let lastType = undefined;
+    let lastType;
     for (const b of this._output) {
       const type = b.type;
       if (type !== lastType) {
@@ -51,34 +51,39 @@ export class OutputBuffer {
       }
 
       const socketConfig = this._socketConfig[b.type];
-      if (!socketConfig) continue;
+      if (!socketConfig) {
+        continue;
+      }
 
-      const {socket, color} = socketConfig;
+      const { socket, color } = socketConfig;
 
-      let str = b.data.toString('utf8');
+      let str = b.data.toString("utf8");
 
-      str = str.split('\r').join('');
+      str = str.split("\r").join("");
 
-      const lines = str.split('\n');
+      const lines = str.split("\n");
       const prefixedLines: string[] = [];
       for (let i = 0; i < lines.length; i++) {
         let line = lines[i];
         if (color) {
-          line = chalk.bold[color](line);
+          line = chalk.bold.keyword(color)(line);
         }
-        if ((i === lines.length - 1 && chalk.stripColor(line).length <= 0) || (i === 0 && !lastEndedInNewLine)) {
+        if (
+          (i === lines.length - 1 && stripColor(line).length <= 0) ||
+          (i === 0 && !lastEndedInNewLine)
+        ) {
           prefixedLines.push(line);
-        }
-        else {
+        } else {
           prefixedLines.push(linePrefix + line);
         }
       }
 
-      const text = prefixedLines.join('\n');
+      const text = prefixedLines.join("\n");
       await socketFlushWriteAsync(socket, text);
 
-      const uncoloredText = chalk.stripColor(text);
-      lastEndedInNewLine = uncoloredText.length > 0 && uncoloredText[uncoloredText.length - 1] === '\n';
+      const uncoloredText = stripColor(text);
+      lastEndedInNewLine =
+        uncoloredText.length > 0 && uncoloredText[uncoloredText.length - 1] === "\n";
     }
 
     this._output = [];

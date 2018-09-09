@@ -1,4 +1,5 @@
-import { ExecContext } from './execRuntime';
+import { ExecContext } from "./execRuntime";
+
 export class MakfyError extends Error {
   execContext?: ExecContext;
 

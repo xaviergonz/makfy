@@ -1,4 +1,6 @@
-export const limitPromiseConcurrency = <T>(concurrency: number): (fn: () => PromiseLike<T>) => Promise<T> => {
+export const limitPromiseConcurrency = <T>(
+  concurrency: number
+): ((fn: () => PromiseLike<T>) => Promise<T>) => {
   if (concurrency < 1) {
     throw new Error(`'concurrency' must be >= 1`);
   }
@@ -17,26 +19,27 @@ export const limitPromiseConcurrency = <T>(concurrency: number): (fn: () => Prom
     }
   };
 
-  return (wrappedPromise) => new Promise<T>((resolve, reject) => {
-    const run = () => {
-      activeCount++;
+  return (wrappedPromise) =>
+    new Promise<T>((resolve, reject) => {
+      const run = () => {
+        activeCount++;
 
-      wrappedPromise().then(
-        (val: any) => {
-          resolve(val);
-          next();
-        },
-        (err: any) => {
-          reject(err);
-          next();
-        }
-      );
-    };
+        wrappedPromise().then(
+          (val: any) => {
+            resolve(val);
+            next();
+          },
+          (err: any) => {
+            reject(err);
+            next();
+          }
+        );
+      };
 
-    if (activeCount < concurrency) {
-      run();
-    } else {
-      queue.push(run);
-    }
-  });
+      if (activeCount < concurrency) {
+        run();
+      } else {
+        queue.push(run);
+      }
+    });
 };

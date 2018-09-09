@@ -33,22 +33,24 @@
   },
   "homepage": "https://github.com/xaviergonz/makfy#readme",
   "devDependencies": {
-    "@types/chalk": "^0.4.31",
-    "@types/node": "^7.0.39",
+    "@types/node": "^10.9.4",
+    "@types/strip-ansi": "^3.0.0",
     "@types/tmp": "0.0.33",
-    "@types/yargs": "^8.0.1",
+    "@types/yargs": "^11.1.1",
+    "prettier": "^1.14.2",
     "rimraf": "^2.6.1",
     "tslint": "^5.5.0",
-    "typescript": "^2.4.2"
+    "tslint-config-prettier": "^1.15.0",
+    "typescript": "^3.0.3"
   },
   "dependencies": {
-    "chalk": "^1.1.3",
+    "chalk": "^2.4.1",
     "glob": "^7.1.2",
     "jsonschema": "^1.1.1",
-    "object.entries": "^1.0.4",
     "pretty-hrtime": "^1.0.3",
-    "tmp": "0.0.31",
-    "yargs": "^8.0.2"
+    "strip-ansi": "^4.0.0",
+    "tmp": "^0.0.33",
+    "yargs": "^12.0.2"
   },
   "yargs": {
     "short-option-groups": false,

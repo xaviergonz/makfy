@@ -1,0 +1,15 @@
+{
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": true
+  },
+  "tslint.packageManager": "yarn",
+  "eslint.packageManager": "yarn",
+  "typescript.tsdk": "node_modules\\typescript\\lib",
+  "eslint.enable": false,
+  "editor.formatOnSave": true,
+  "bookmarks.saveBookmarksInProject": true,
+  "npm.packageManager": "yarn",
+  "typescript.preferences.importModuleSpecifier": "relative",
+  "javascript.preferences.importModuleSpecifier": "relative",
+  "editor.codeActionsOnSaveTimeout": 2000
+}

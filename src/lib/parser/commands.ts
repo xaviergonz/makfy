@@ -1,9 +1,9 @@
-import { MakfyError } from '../errors';
-import { validateInstance } from '../schema';
-import { Commands, commandsSchema } from '../schema/commands';
-import { errorMessageForObject } from '../utils/formatting';
-import { isObject } from '../utils/typeChecking';
-import { parseCommand, ParsedCommand } from './command';
+import { MakfyError } from "../errors";
+import { validateInstance } from "../schema";
+import { Commands, commandsSchema } from "../schema/commands";
+import { errorMessageForObject } from "../utils/formatting";
+import { isObject } from "../utils/typeChecking";
+import { parseCommand, ParsedCommand } from "./command";
 
 export interface ParsedCommands {
   [cmdName: string]: ParsedCommand;
@@ -11,7 +11,7 @@ export interface ParsedCommands {
 
 export const parseCommands = (commands: Commands, skipValidation: boolean): ParsedCommands => {
   const error = (property: string | undefined, message: string): MakfyError => {
-    return new MakfyError(errorMessageForObject(['commands', property], message), undefined);
+    return new MakfyError(errorMessageForObject(["commands", property], message), undefined);
   };
 
   if (!isObject(commands)) {

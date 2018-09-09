@@ -1,18 +1,25 @@
-import { MakfyError } from '../errors';
-import { validateInstance } from '../schema';
-import { Command, commandSchema } from '../schema/commands';
-import { errorMessageForObject } from '../utils/formatting';
-import { parseArgDefinition, ParsedArgDefinition } from './commandArg';
+import { MakfyError } from "../errors";
+import { validateInstance } from "../schema";
+import { Command, commandSchema } from "../schema/commands";
+import { errorMessageForObject } from "../utils/formatting";
+import { parseArgDefinition, ParsedArgDefinition } from "./commandArg";
 
 export interface ParsedCommand {
   argDefinitions: {
-    [argName: string]: ParsedArgDefinition
+    [argName: string]: ParsedArgDefinition;
   };
 }
 
-export const parseCommand = (command: Command, cmdName: string, skipValidation: boolean): ParsedCommand => {
+export const parseCommand = (
+  command: Command,
+  cmdName: string,
+  skipValidation: boolean
+): ParsedCommand => {
   const error = (property: string | undefined, message: string): MakfyError => {
-    return new MakfyError(errorMessageForObject(['commands', cmdName, property], message), undefined);
+    return new MakfyError(
+      errorMessageForObject(["commands", cmdName, property], message),
+      undefined
+    );
   };
 
   if (!skipValidation) {

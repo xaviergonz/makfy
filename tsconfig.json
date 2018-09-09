@@ -1,7 +1,5 @@
 {
-  "include": [
-    "src/**/*"
-  ],
+  "include": ["src/**/*"],
   "compilerOptions": {
     "outDir": "./dist",
 
@@ -15,25 +13,17 @@
     "moduleResolution": "node",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "lib": [
-      "ES2016",
-      "DOM",
-      "DOM.Iterable",
-      "ES2017.Object"
-    ],
-    "noImplicitAny": true,
-    "suppressImplicitAnyIndexErrors": true,
-    "alwaysStrict": true,
-    "forceConsistentCasingInFileNames": true,
-    "jsx": "React",
-    "noEmitOnError": false,
-    "noFallthroughCasesInSwitch": true,
-    "noImplicitReturns": true,
-    "noImplicitThis": true,
-    "strictNullChecks": true,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
+    "lib": ["es2016", "es2017.object"],
     "downlevelIteration": true,
+
+    "strict": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+
+    "suppressImplicitAnyIndexErrors": false,
+    "forceConsistentCasingInFileNames": true,
+    "noEmitOnError": false,
+
     "newLine": "LF"
   }
 }

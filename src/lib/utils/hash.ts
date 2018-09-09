@@ -1,9 +1,9 @@
-import * as crypto from 'crypto';
-import * as fs from 'fs';
-import * as path from 'path';
-import { GetFileChangesResult } from '../schema/runtime';
+import * as crypto from "crypto";
+import * as fs from "fs";
+import * as path from "path";
+import { GetFileChangesResult } from "../schema/runtime";
 
-export type HashType = 'sha1';
+export type HashType = "sha1";
 
 export interface HashEntry {
   hash?: string;
@@ -19,9 +19,13 @@ export interface HashCollection {
   hashes: Hashes;
 }
 
-export const cacheFolderName = '.makfy-cache';
+export const cacheFolderName = ".makfy-cache";
 
-export const generateHashEntryAsync = async (filePath: string, hashType: HashType, onlySize: boolean): Promise<HashEntry> => {
+export const generateHashEntryAsync = async (
+  filePath: string,
+  hashType: HashType,
+  onlySize: boolean
+): Promise<HashEntry> => {
   const stat = fs.statSync(filePath);
   const size = stat.size;
 
@@ -34,19 +38,19 @@ export const generateHashEntryAsync = async (filePath: string, hashType: HashTyp
   const hash = crypto.createHash(hashType);
   const stream = fs.createReadStream(filePath);
 
-  return await new Promise<HashEntry>((resolve, reject) => {
-    stream.once('error', (err: Error) => {
+  return new Promise<HashEntry>((resolve, reject) => {
+    stream.once("error", (err: Error) => {
       reject(err);
     });
 
-    stream.on('data', (data: Buffer) => {
+    stream.on("data", (data: Buffer) => {
       hash.update(data);
     });
 
-    stream.once('end', () => {
+    stream.once("end", () => {
       const hashEntry: HashEntry = {
-        hash: hash.digest('base64'),
-        size: size,
+        hash: hash.digest("base64"),
+        size: size
       };
 
       resolve(hashEntry);
@@ -54,8 +58,14 @@ export const generateHashEntryAsync = async (filePath: string, hashType: HashTyp
   });
 };
 
-export const generateHashCollectionAsync = async (files: string[], hashType: HashType, onlySize: boolean): Promise<HashCollection> => {
-  const hashes = {};
+export const generateHashCollectionAsync = async (
+  files: string[],
+  hashType: HashType,
+  onlySize: boolean
+): Promise<HashCollection> => {
+  const hashes: {
+    [k: string]: HashEntry;
+  } = {};
 
   for (const file of files) {
     hashes[file] = await generateHashEntryAsync(file, hashType, onlySize);
@@ -73,7 +83,10 @@ export const generateHashCollectionAsync = async (files: string[], hashType: Has
  * @param newHashCollection
  * @return {Promise<GetFileChangesResult>}
  */
-export const getHashCollectionDelta = (oldHashCollection: HashCollection | undefined, newHashCollection: HashCollection): GetFileChangesResult => {
+export const getHashCollectionDelta = (
+  oldHashCollection: HashCollection | undefined,
+  newHashCollection: HashCollection
+): GetFileChangesResult => {
   const result: GetFileChangesResult = {
     hasChanges: false,
     cleanRun: false,
@@ -91,7 +104,7 @@ export const getHashCollectionDelta = (oldHashCollection: HashCollection | undef
   }
 
   if (oldHashCollection.hashType !== newHashCollection.hashType) {
-    throw new Error('hash type mistmatch');
+    throw new Error("hash type mistmatch");
   }
 
   const oldHashes = oldHashCollection.hashes;
@@ -104,22 +117,18 @@ export const getHashCollectionDelta = (oldHashCollection: HashCollection | undef
     if (oldHash && newHash) {
       if (oldHash.size === newHash.size && oldHash.hash === newHash.hash) {
         result.unmodified.push(e);
-      }
-      else {
+      } else {
         result.hasChanges = true;
         result.modified.push(e);
       }
-    }
-    else if (oldHash) {
+    } else if (oldHash) {
       result.hasChanges = true;
       result.removed.push(e);
-    }
-    else if (newHash) {
+    } else if (newHash) {
       result.hasChanges = true;
       result.added.push(e);
-    }
-    else {
-      throw new Error('no old and no new hash, this should not happen');
+    } else {
+      throw new Error("no old and no new hash, this should not happen");
     }
   }
 
@@ -131,9 +140,11 @@ export const getHashCollectionDelta = (oldHashCollection: HashCollection | undef
  * @param hashFilePath Path to the hash file
  * @return {Promise<HashCollection>} The hash collection.
  */
-export const loadHashCollectionFileAsync = async (hashFilePath: string): Promise<HashCollection> => {
-  return await new Promise<HashCollection>((resolve, reject) => {
-    fs.readFile(hashFilePath, 'utf8', (err, data) => {
+export const loadHashCollectionFileAsync = async (
+  hashFilePath: string
+): Promise<HashCollection> => {
+  return new Promise<HashCollection>((resolve, reject) => {
+    fs.readFile(hashFilePath, "utf8", (err, data) => {
       if (err) {
         reject(err);
         return;
@@ -144,8 +155,11 @@ export const loadHashCollectionFileAsync = async (hashFilePath: string): Promise
   });
 };
 
-export const saveHashCollectionFileAsync = async (hashFilePath: string, hashCollection: HashCollection) => {
-  return await new Promise<void>((resolve, reject) => {
+export const saveHashCollectionFileAsync = async (
+  hashFilePath: string,
+  hashCollection: HashCollection
+) => {
+  return new Promise<void>((resolve, reject) => {
     fs.writeFile(hashFilePath, JSON.stringify(hashCollection), (err) => {
       if (err) {
         reject(err);
@@ -156,8 +170,15 @@ export const saveHashCollectionFileAsync = async (hashFilePath: string, hashColl
   });
 };
 
-export const getHashCollectionFilename = (scriptContents: string, contextName: string, hashType: HashType) => {
-  const hash = crypto.createHash(hashType).update(scriptContents + contextName + hashType).digest('hex');
+export const getHashCollectionFilename = (
+  scriptContents: string,
+  contextName: string,
+  hashType: HashType
+) => {
+  const hash = crypto
+    .createHash(hashType)
+    .update(scriptContents + contextName + hashType)
+    .digest("hex");
 
   return path.join(cacheFolderName, `${hash}.hash`);
 };

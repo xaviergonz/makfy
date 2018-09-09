@@ -1,5 +1,5 @@
-import { Commands } from './commands';
-import { FullOptions } from './options';
+import { Commands } from "./commands";
+import { FullOptions } from "./options";
 
 export interface ExecObject {
   _: string; // command name
@@ -40,10 +40,14 @@ export interface MakfyContext {
 export interface ExecUtils {
   makfyContext: MakfyContext;
   escape(...parts: string[]): string;
-  fixPath(path: string, style: 'autodetect' | 'windows' | 'posix'): string;
+  fixPath(path: string, style: "autodetect" | "windows" | "posix"): string;
   setEnvVar(name: string, value: string | undefined): string;
   expandGlobsAsync(globPatterns: string[]): Promise<string[]>;
-  getFileChangesAsync(contextName: string, globPatterns: string[] | string, options?: Partial<GetFileChangesOptions>): Promise<GetFileChangesResult>;
+  getFileChangesAsync(
+    contextName: string,
+    globPatterns: string[] | string,
+    options?: Partial<GetFileChangesOptions>
+  ): Promise<GetFileChangesResult>;
   cleanCache(): void;
 
   // internal only for now
