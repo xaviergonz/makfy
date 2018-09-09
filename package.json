@@ -10,7 +10,7 @@
   "scripts": {
     "build": "tsc -p .",
     "clean": "rimraf ./dist",
-    "prepublishOnly": "npm run clean && npm run build"
+    "prepublishOnly": "yarn clean && yarn build"
   },
   "files": [
     "dist"
