@@ -12,6 +12,11 @@ export interface Command<TArgDefs extends ArgDefinitions> {
   run(exec: ExecFunction, args: ArgsInstance<TArgDefs>, utils: ExecUtils): void;
 }
 
+// fake, only used to force commands to come from the command function
+export interface CommandFromFunction {
+  readonly $fromCommandFunction: undefined;
+}
+
 export const commandSchema: Schema = {
   id: "/command",
   type: "object",
@@ -32,7 +37,7 @@ export const commandSchema: Schema = {
 };
 
 export interface Commands {
-  [commandName: string]: Command<ArgDefinitions> & { readonly $fromCommandFunction: undefined };
+  [commandName: string]: Command<ArgDefinitions> & CommandFromFunction;
 }
 
 export const commandsSchema: Schema = {
@@ -44,9 +49,8 @@ export const commandsSchema: Schema = {
   additionalProperties: false
 };
 
-// only used for Ts typings
 export function command<TArgDefs extends ArgDefinitions = {}>(
   cmd: Command<TArgDefs>
-): Command<TArgDefs> & { readonly $fromCommandFunction: undefined } {
-  return cmd as any;
+): Command<TArgDefs> & CommandFromFunction {
+  return cmd as Command<TArgDefs> & CommandFromFunction;
 }

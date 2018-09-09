@@ -5,7 +5,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as tsNode from "ts-node";
 import * as yargs from "yargs";
-import { listAllCommands, listCommand, runCommandAsync } from "../lib/";
+import { listAllCommands, listCommand, MakfyConfig, runCommandAsync } from "../lib/";
 import { MakfyError, RunError } from "../lib/errors";
 import { alphanumericExtendedPattern } from "../lib/schema";
 import { reservedArgNames } from "../lib/schema/args";
@@ -22,7 +22,7 @@ tsNode.register({
 });
 
 const programName = "makfy";
-const argv = yargs.argv;
+const argv = yargs.help(false).argv;
 
 const enum ErrCode {
   CliError = 1,
@@ -133,10 +133,22 @@ const loadFile = (fileToLoad: FileToLoad, loadContents: boolean): LoadFileResult
 
   // try to load the user file
   try {
-    const fileExports = require(absoluteFilename);
+    let usingDefaultExport = false;
+    let fileExports: MakfyConfig = require(absoluteFilename);
+
+    // use default export if available
+    if ((fileExports as any).default) {
+      usingDefaultExport = true;
+      fileExports = (fileExports as any).default;
+    }
 
     if (!isObject(fileExports)) {
-      exitWithError(ErrCode.UserFileError, `module.exports inside '${filename}' is not an object`);
+      exitWithError(
+        ErrCode.UserFileError,
+        `module.exports${
+          usingDefaultExport ? ".default" : ""
+        } inside '${filename}' is not an object`
+      );
       return;
     }
 
@@ -191,7 +203,7 @@ const mainAsync = async () => {
 
   let execute: () => Promise<void>;
 
-  if (argv.list || argv.l) {
+  if (argv.list || argv.l || argv._.length <= 0) {
     // list
     const fileToLoad = getFileToLoad();
     const { exports } = loadFile(fileToLoad, false)!;
@@ -221,12 +233,6 @@ const mainAsync = async () => {
     }
   } else {
     // run
-    if (argv._.length <= 0) {
-      printProgramHelp();
-      exitWithError(ErrCode.CliError);
-      return;
-    }
-
     if (argv._.length > 1) {
       exitWithError(ErrCode.CliError, "only one command can be run at the same time");
       return;

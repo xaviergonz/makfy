@@ -1,5 +1,11 @@
 # makfy changelog
 
+## 1.4.0
+
+- added run() as short syntax for argument-less / help-less commands. see README.md for further details.
+- list is now the default when no option is used; to get help use --help
+- fixed help command
+
 ## 1.3.0
 
 - support for .ts files out of the box

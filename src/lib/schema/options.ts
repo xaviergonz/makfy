@@ -5,7 +5,7 @@ export interface FullOptions {
   showTime: boolean;
 }
 
-export type PartialOptions = Partial<FullOptions>;
+export interface PartialOptions extends Partial<FullOptions> {}
 
 export const optionsSchema: Schema = {
   id: "/options",

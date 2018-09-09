@@ -78,22 +78,25 @@ module.exports = {
 ts
 
 ```ts
-import { Commands, command } from "makfy";
+import { command, makfyConfig } from "makfy";
 
-export const commands: Commands = {
-  // note how in TS command is used to get better typing validation
-  clean: command({
-    run: async (exec) => {
-      await exec(
-        // running sequentially
-        "rimraf ./dist-a",
-        "rimraf ./dist-b",
-        // and these run after the other ones too, but in parallel!
-        ["rimraf ./dist-c", "rimraf ./dist-d"]
-      );
-    }
-  })
-};
+// note how in TS makfyConfig and command are used to get better typing validation
+// these can also be used in js, but it is not necessary
+export default makfyConfig({
+  commands: {
+    clean: command({
+      run: async (exec) => {
+        await exec(
+          // running sequentially
+          "rimraf ./dist-a",
+          "rimraf ./dist-b",
+          // and these run after the other ones too, but in parallel!
+          ["rimraf ./dist-c", "rimraf ./dist-d"]
+        );
+      }
+    })
+  }
+});
 ```
 
 Another one but with arguments and help (run with `makfy clean --dev`, `makfy clean --prod` or `makfy clean --dev --prod`).
@@ -117,7 +120,7 @@ module.exports = {
 };
 ```
 
-The help we will get when running `makfy --list`.
+The help we will get when running `makfy --list` or `makfy`.
 
 ```
 using command file 'makfyfile.js'...
@@ -203,7 +206,7 @@ module.exports = {
 
 ## Documentation
 
-The basic structure of a `makfyfile.js` is as follows:
+The basic structure of a `makfyfile.(js|ts)` is as follows:
 
 js
 
@@ -217,11 +220,32 @@ module.exports = {
         [argName]: ArgDefinition
       },
       internal?: boolean
-    }
+    } | run(...commandsToRun)
   },
   dependencies?: string[],
   options?: Options
 };
+```
+
+ts
+
+```ts
+import { command, makfyConfig } from "makfy";
+
+export default makfyConfig({
+  commands: commands({
+    [commandName]: command({
+      run: async(exec, args, utils) => Promise<void>,
+      desc?: string,
+      args?: {
+        [argName]: ArgDefinition
+      },
+      internal?: boolean
+    }) | run(...commandsToRun)
+  }),
+  dependencies?: string[],
+  options?: Options
+});
 ```
 
 In more detail:
@@ -330,6 +354,39 @@ As a rule of thumb, if you do a local require such as `require('./foo/bar')` in 
 - `showTime: boolean`
 
   > When set it will show the current time near each log line (default: `false`)
+
+### Short syntax
+
+If your command doesn't need any arguments or any description then you can use the `run` function to make it shorter to write:
+
+js
+
+```js
+const { run } = require('makfy');
+...
+  clean: run(
+    // running sequentially
+    "rimraf ./dist-a",
+    "rimraf ./dist-b",
+    // and these run after the other ones too, but in parallel!
+    ["rimraf ./dist-c", "rimraf ./dist-d"]
+  )
+```
+
+ts
+
+```ts
+import { run } from 'makfy';
+...
+  // note how command() is not needed when using run
+  clean: run(
+    // running sequentially
+    "rimraf ./dist-a",
+    "rimraf ./dist-b",
+    // and these run after the other ones too, but in parallel!
+    ["rimraf ./dist-c", "rimraf ./dist-d"]
+  )
+```
 
 ### Utility methods (provided by `utils`)
 

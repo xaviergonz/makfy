@@ -4,8 +4,9 @@ import * as execRuntime from "./execRuntime";
 import { ParsedArgDefinition } from "./parser/commandArg";
 import { parseCommands } from "./parser/commands";
 import { parseOptions } from "./parser/options";
-import { command, Commands } from "./schema/commands";
+import { command, Command, CommandFromFunction, Commands } from "./schema/commands";
 import { FullOptions, PartialOptions } from "./schema/options";
+import { ExecCommand, ExecFunction } from "./schema/runtime";
 import { resetColors } from "./utils/console";
 import { errorMessageForObject, getTimeString } from "./utils/formatting";
 import { saveHashCollectionFileAsync } from "./utils/hash";
@@ -16,7 +17,18 @@ import stripColor = require("strip-ansi");
 const prettyHrTime = require("pretty-hrtime");
 type ExecContext = execRuntime.ExecContext;
 
-export { Commands, PartialOptions, command };
+export { command };
+
+export interface MakfyConfig {
+  commands: Commands;
+  dependencies?: string[];
+  options?: PartialOptions;
+}
+
+// only used for TS typing
+export function makfyConfig(makfyConfigData: MakfyConfig): MakfyConfig {
+  return makfyConfigData;
+}
 
 export interface RunCommandOptions {
   commands: Commands;
@@ -210,3 +222,13 @@ export const listAllCommands = (commands: Commands, listArguments = true, listIn
   }
   return output;
 };
+
+// short syntax
+export function run(...inlineCommands: ExecCommand[]): Command<{}> & CommandFromFunction {
+  const cmd: Command<{}> = {
+    run: async (exec: ExecFunction) => {
+      await exec(...inlineCommands);
+    }
+  };
+  return cmd as Command<{}> & CommandFromFunction;
+}
