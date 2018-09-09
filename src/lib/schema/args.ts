@@ -114,6 +114,12 @@ export const enumArgSchema: Schema = {
 
 export type ArgDefinition = FlagArgDefinition | StringArgDefinition | EnumArgDefinition;
 
+export type ArgInstance<T extends ArgDefinition> = T extends FlagArgDefinition
+  ? boolean
+  : T extends StringArgDefinition
+    ? string
+    : T extends EnumArgDefinition ? string : string | boolean;
+
 export const argSchema: Schema = {
   id: "/arg",
   oneOf: [flagArgSchema, stringArgSchema, enumArgSchema]
@@ -128,3 +134,11 @@ export const argsSchema: Schema = {
   additionalProperties: false,
   forbiddenPropertyNames: reservedArgNames
 } as Schema;
+
+export interface ArgDefinitions {
+  [argName: string]: ArgDefinition;
+}
+
+export type ArgsInstance<TArgDefs extends ArgDefinitions> = {
+  [k in keyof TArgDefs]: ArgInstance<TArgDefs[k]>
+};

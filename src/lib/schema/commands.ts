@@ -2,16 +2,14 @@
 
 import { Schema } from "jsonschema";
 import { alphanumericExtendedPattern } from "./";
-import { ArgDefinition, argsSchema } from "./args";
+import { ArgDefinitions, ArgsInstance, argsSchema } from "./args";
 import { ExecFunction, ExecUtils } from "./runtime";
 
-export interface Command {
+export interface Command<TArgDefs extends ArgDefinitions> {
   desc?: string;
-  args?: {
-    [argName: string]: ArgDefinition;
-  };
+  args?: TArgDefs;
   internal?: boolean;
-  run(exec: ExecFunction, args: object, utils: ExecUtils): void;
+  run(exec: ExecFunction, args: ArgsInstance<TArgDefs>, utils: ExecUtils): void;
 }
 
 export const commandSchema: Schema = {
@@ -34,7 +32,7 @@ export const commandSchema: Schema = {
 };
 
 export interface Commands {
-  [commandName: string]: Command;
+  [commandName: string]: Command<ArgDefinitions> & { readonly $fromCommandFunction: undefined };
 }
 
 export const commandsSchema: Schema = {
@@ -45,3 +43,10 @@ export const commandsSchema: Schema = {
   },
   additionalProperties: false
 };
+
+// only used for Ts typings
+export function command<TArgDefs extends ArgDefinitions = {}>(
+  cmd: Command<TArgDefs>
+): Command<TArgDefs> & { readonly $fromCommandFunction: undefined } {
+  return cmd as any;
+}

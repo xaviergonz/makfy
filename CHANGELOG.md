@@ -2,8 +2,7 @@
 
 ## 1.3.0
 
-- updated dependencies
-- added prettier, better linting, etc
+- support for .ts files out of the box
 
 ## 1.2.0
 

@@ -1,5 +1,6 @@
 import { MakfyError } from "../errors";
 import { validateInstance } from "../schema";
+import { ArgDefinitions } from "../schema/args";
 import { Command, commandSchema } from "../schema/commands";
 import { errorMessageForObject } from "../utils/formatting";
 import { parseArgDefinition, ParsedArgDefinition } from "./commandArg";
@@ -11,7 +12,7 @@ export interface ParsedCommand {
 }
 
 export const parseCommand = (
-  command: Command,
+  command: Command<ArgDefinitions>,
   cmdName: string,
   skipValidation: boolean
 ): ParsedCommand => {

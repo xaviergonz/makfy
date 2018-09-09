@@ -4,7 +4,7 @@ import * as execRuntime from "./execRuntime";
 import { ParsedArgDefinition } from "./parser/commandArg";
 import { parseCommands } from "./parser/commands";
 import { parseOptions } from "./parser/options";
-import { Commands } from "./schema/commands";
+import { command, Commands } from "./schema/commands";
 import { FullOptions, PartialOptions } from "./schema/options";
 import { resetColors } from "./utils/console";
 import { errorMessageForObject, getTimeString } from "./utils/formatting";
@@ -15,6 +15,8 @@ import stripColor = require("strip-ansi");
 
 const prettyHrTime = require("pretty-hrtime");
 type ExecContext = execRuntime.ExecContext;
+
+export { Commands, PartialOptions, command };
 
 export interface RunCommandOptions {
   commands: Commands;
@@ -42,13 +44,13 @@ export const runCommandAsync = async (runCommandOptions: RunCommandOptions) => {
   const parsedOptions: FullOptions = parseOptions(options, false);
 
   const parsedCommands = parseCommands(commands, false);
-  const command = commands[commandName];
+  const currentCommand = commands[commandName];
   const parsedCommand = parsedCommands[commandName];
-  if (!parsedCommand || !command) {
+  if (!parsedCommand || !currentCommand) {
     throw new MakfyError(`command '${commandName}' not found`, undefined);
   }
 
-  if (command.internal) {
+  if (currentCommand.internal) {
     throw new MakfyError("internal commands cannot be run directly", undefined);
   }
 
@@ -121,7 +123,7 @@ export const listCommand = (commands: Commands, commandName: string, listArgumen
     throw new MakfyError(`command '${commandName}' not found`, undefined);
   }
 
-  const command = commands[commandName];
+  const currentCommand = commands[commandName];
 
   let title = chalk.bgBlue.bold.white(commandName);
 
@@ -181,8 +183,8 @@ export const listCommand = (commands: Commands, commandName: string, listArgumen
   }
 
   w.writeLine(title);
-  if (command.desc !== undefined) {
-    w.writeLine(chalk.bold.gray(` - ${command.desc}`));
+  if (currentCommand.desc !== undefined) {
+    w.writeLine(chalk.bold.gray(` - ${currentCommand.desc}`));
   }
   w.write(aw.output);
   w.writeLine(chalk.reset(""));
@@ -201,8 +203,8 @@ export const listAllCommands = (commands: Commands, listArguments = true, listIn
   let output = "";
 
   for (const commandName of Object.keys(commands)) {
-    const command = commands[commandName];
-    if (!command.internal || listInternal) {
+    const currentCommand = commands[commandName];
+    if (!currentCommand.internal || listInternal) {
       output += listCommand(commands, commandName, listArguments);
     }
   }

@@ -7,6 +7,7 @@ import * as yargs from "yargs";
 import { MakfyError, RunError } from "./errors";
 import { ParsedCommand } from "./parser/command";
 import { ParsedCommands } from "./parser/commands";
+import { ArgDefinitions } from "./schema/args";
 import { Command } from "./schema/commands";
 import {
   ExecCommand,
@@ -436,7 +437,7 @@ const execCSubcmmandStringAsync = async (command: string, context: ExecContext) 
 const execObjectAsync = async (command: ExecObject, context: ExecContext) => {
   const cmdName = command._;
   const args = command.args;
-  let cmd: Command;
+  let cmd: Command<ArgDefinitions>;
   let parsedCmd: ParsedCommand;
 
   if (typeof cmdName === "string") {

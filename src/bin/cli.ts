@@ -3,6 +3,7 @@
 import chalk from "chalk";
 import * as fs from "fs";
 import * as path from "path";
+import * as tsNode from "ts-node";
 import * as yargs from "yargs";
 import { listAllCommands, listCommand, runCommandAsync } from "../lib/";
 import { MakfyError, RunError } from "../lib/errors";
@@ -15,6 +16,11 @@ import { errorMessageForObject, formatContextId } from "../lib/utils/formatting"
 import { isObject, isStringArray } from "../lib/utils/typeChecking";
 import stripColor = require("strip-ansi");
 
+// enable ts support
+tsNode.register({
+  pretty: true
+});
+
 const programName = "makfy";
 const argv = yargs.argv;
 
@@ -24,15 +30,18 @@ const enum ErrCode {
   ExecError = 3
 }
 
-const exitWithError = (code: ErrCode, message?: string, prefix?: string) => {
+const exitWithError = (code: ErrCode, message?: string, prefix?: string): never => {
   resetColors();
   if (message) {
     console.error((prefix ? prefix : "") + chalk.bold.red("[ERROR] " + message));
   }
   process.exit(code);
+
+  // this should never happen
+  throw new Error();
 };
 
-const defaultFilename = programName + "file.js";
+const defaultFilename = programName + "file";
 const version = require("../../package.json").version;
 
 const printProgramHelp = () => {
@@ -79,25 +88,36 @@ interface FileToLoad {
 }
 
 const getFileToLoad = (): FileToLoad => {
-  let filename = defaultFilename;
+  let mainFilename = defaultFilename;
   if (argv.f || argv.file) {
     if (argv.f && argv.file) {
       exitWithError(ErrCode.CliError, `-f and --file cannot be used at the same time`);
     }
-    filename = argv.f || argv.file;
-  }
-  if (!fs.existsSync(filename)) {
-    exitWithError(ErrCode.CliError, `command file '${filename}' not found`);
+    mainFilename = argv.f || argv.file;
   }
 
-  console.log(chalk.bold.gray(`using command file '${chalk.bold.magenta(filename)}'...`));
+  const filesToTry: string[] = [mainFilename];
+  if (path.extname(mainFilename) === "") {
+    filesToTry.push(mainFilename + ".ts");
+    filesToTry.push(mainFilename + ".js");
+  }
 
-  const absoluteFilename = path.resolve(filename);
+  for (const filename of filesToTry) {
+    if (fs.existsSync(filename)) {
+      console.log(chalk.bold.gray(`using command file '${chalk.bold.magenta(filename)}'...`));
 
-  return {
-    filename,
-    absoluteFilename
-  };
+      const absoluteFilename = path.resolve(filename);
+
+      return {
+        filename,
+        absoluteFilename
+      };
+    }
+  }
+
+  exitWithError(ErrCode.CliError, `command file not found, tried ${filesToTry.join(", ")}`);
+  // this should never happen
+  throw new Error();
 };
 
 interface LoadFileResult {

@@ -1,5 +1,6 @@
 /node_modules/
 /dist/
+/package-lock.json
 
 ### JetBrains template
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio and Webstorm
