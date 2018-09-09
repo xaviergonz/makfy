@@ -81,7 +81,7 @@ ts
 import { Commands, command } from "makfy";
 
 export const commands: Commands = {
-  // note how in TS command is used
+  // note how in TS command is used to get better typing validation
   clean: command({
     run: async (exec) => {
       await exec(
