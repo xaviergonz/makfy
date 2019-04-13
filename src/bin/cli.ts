@@ -16,6 +16,16 @@ import { resetColors } from "../lib/utils/console";
 import { errorMessageForObject, formatContextId } from "../lib/utils/formatting";
 import { isObject, isStringArray } from "../lib/utils/typeChecking";
 
+yargs.parserConfiguration({
+  "short-option-groups": false,
+  "camel-case-expansion": false,
+  "dot-notation": false,
+  "parse-numbers": false,
+  "boolean-negation": false,
+  "duplicate-arguments-array": false,
+  "flatten-duplicate-arrays": false
+});
+
 // enable ts support
 tsNode.register({
   pretty: true

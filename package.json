@@ -1,6 +1,6 @@
 {
   "name": "makfy",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "makfy - npm scripts on steroids!",
   "main": "dist/lib/index.js",
   "typings": "dist/lib/index.d.ts",
@@ -52,15 +52,5 @@
     "ts-node": "^8.0.3",
     "typescript": "^3.4.3",
     "yargs": "^13.2.2"
-  },
-  "yargs": {
-    "short-option-groups": false,
-    "camel-case-expansion": false,
-    "dot-notation": false,
-    "parse-numbers": false,
-    "boolean-negation": false,
-    "duplicate-arguments-array": false,
-    "flatten-duplicate-arrays": false,
-    "populate": false
   }
 }
