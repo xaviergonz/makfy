@@ -1,4 +1,5 @@
 import chalk, { Level } from "chalk";
+import stripColor from "strip-ansi";
 import { MakfyError, RunError } from "./errors";
 import * as execRuntime from "./execRuntime";
 import { ParsedArgDefinition } from "./parser/commandArg";
@@ -12,7 +13,6 @@ import { errorMessageForObject, getTimeString } from "./utils/formatting";
 import { saveHashCollectionFileAsync } from "./utils/hash";
 import { TextWriter } from "./utils/TextWriter";
 import { isObject } from "./utils/typeChecking";
-import stripColor = require("strip-ansi");
 
 const prettyHrTime = require("pretty-hrtime");
 type ExecContext = execRuntime.ExecContext;

@@ -1,7 +1,7 @@
 import Socket = NodeJS.Socket;
 import chalk from "chalk";
+import stripColor from "strip-ansi";
 import { socketFlushWriteAsync } from "./sockets";
-import stripColor = require("strip-ansi");
 
 export interface OutputBufferData {
   type: string;

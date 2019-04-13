@@ -3,6 +3,7 @@
 import chalk from "chalk";
 import * as fs from "fs";
 import * as path from "path";
+import stripColor from "strip-ansi";
 import * as tsNode from "ts-node";
 import * as yargs from "yargs";
 import { listAllCommands, listCommand, MakfyConfig, runCommandAsync } from "../lib/";
@@ -14,7 +15,6 @@ import { PartialOptions } from "../lib/schema/options";
 import { resetColors } from "../lib/utils/console";
 import { errorMessageForObject, formatContextId } from "../lib/utils/formatting";
 import { isObject, isStringArray } from "../lib/utils/typeChecking";
-import stripColor = require("strip-ansi");
 
 // enable ts support
 tsNode.register({
@@ -93,7 +93,7 @@ const getFileToLoad = (): FileToLoad => {
     if (argv.f && argv.file) {
       exitWithError(ErrCode.CliError, `-f and --file cannot be used at the same time`);
     }
-    mainFilename = argv.f || argv.file;
+    mainFilename = (argv.f || argv.file) as string;
   }
 
   const filesToTry: string[] = [mainFilename];

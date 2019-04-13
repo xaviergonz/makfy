@@ -427,7 +427,7 @@ const execCSubcmmandStringAsync = async (command: string, context: ExecContext) 
     {
       _: cmdName,
       args: {
-        ...parsed
+        ...(parsed as any)
       }
     },
     context
