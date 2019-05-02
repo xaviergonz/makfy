@@ -1,20 +1,20 @@
 // tslint:disable:no-object-literal-type-assertion
 
 import { Schema } from "jsonschema";
+import { config } from "../config";
 import { alphanumericExtendedPattern } from "./";
 import { ArgDefinitions, ArgsInstance, argsSchema } from "./args";
-import { ExecFunction, ExecUtils } from "./runtime";
+import { ExecCommand, ExecFunction } from "./runtime";
+
+export type CommandRunFn<TArgDefs extends ArgDefinitions> = (
+  exec: ExecFunction,
+  args: ArgsInstance<TArgDefs>
+) => Promise<void>;
 
 export interface Command<TArgDefs extends ArgDefinitions> {
   desc?: string;
   args?: TArgDefs;
-  internal?: boolean;
-  run(exec: ExecFunction, args: ArgsInstance<TArgDefs>, utils: ExecUtils): void;
-}
-
-// fake, only used to force commands to come from the command function
-export interface CommandFromFunction {
-  readonly $fromCommandFunction: undefined;
+  run: CommandRunFn<TArgDefs>;
 }
 
 export const commandSchema: Schema = {
@@ -28,16 +28,13 @@ export const commandSchema: Schema = {
     args: argsSchema,
     run: {
       isFunction: true
-    } as Schema,
-    internal: {
-      type: "boolean"
-    }
+    } as Schema
   },
   additionalProperties: false
 };
 
 export interface Commands {
-  [commandName: string]: Command<ArgDefinitions> & CommandFromFunction;
+  [commandName: string]: Command<ArgDefinitions>;
 }
 
 export const commandsSchema: Schema = {
@@ -49,8 +46,61 @@ export const commandsSchema: Schema = {
   additionalProperties: false
 };
 
-export function command<TArgDefs extends ArgDefinitions = {}>(
-  cmd: Command<TArgDefs>
-): Command<TArgDefs> & CommandFromFunction {
-  return cmd as Command<TArgDefs> & CommandFromFunction;
+export function isInternalCommand(commandName: string) {
+  return commandName.startsWith("_");
+}
+
+export class CommandBuilder<TArgDefs extends ArgDefinitions> {
+  private _command: Partial<Command<TArgDefs>> = {};
+
+  constructor(private readonly name: string) {}
+
+  desc(desc: string): this {
+    this._command.desc = desc;
+    return this;
+  }
+
+  args<TNewArgDefs extends ArgDefinitions>(argDefs: TNewArgDefs): CommandBuilder<TNewArgDefs> {
+    this._command.args = argDefs as any;
+    return (this as any) as CommandBuilder<TNewArgDefs>;
+  }
+
+  argsDesc(argDescs: { [k in keyof TArgDefs]?: string }): this {
+    this._command.args = this._command.args || ({} as any);
+
+    Object.keys(argDescs).forEach((argName) => {
+      const desc = argDescs[argName];
+
+      const argObj = (this._command.args![argName] = this._command.args![argName] || {});
+      Object.assign(argObj, { desc });
+    });
+
+    return this;
+  }
+
+  // short version
+  run(runFn: CommandRunFn<TArgDefs>): void;
+
+  // long version
+  run(...inlineCommands: ExecCommand[]): void;
+
+  // base
+  run(...cmdOrCommands: any[]): void {
+    let runFn;
+    if (cmdOrCommands.length === 1 && typeof cmdOrCommands[0] === "function") {
+      runFn = cmdOrCommands[0];
+    } else {
+      runFn = async (exec: ExecFunction) => {
+        await exec(...cmdOrCommands);
+      };
+    }
+
+    config.commands[this.name] = {
+      ...this._command,
+      run: runFn
+    };
+  }
+}
+export function cmd(name: string): CommandBuilder<{}> {
+  return new CommandBuilder(name);
 }

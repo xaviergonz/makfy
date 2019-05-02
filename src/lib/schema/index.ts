@@ -3,7 +3,7 @@
 import { Options, Schema, SchemaContext, Validator, ValidatorResult } from "jsonschema";
 
 // export const alphanumericPattern = '^[a-zA-Z0-9]+$';
-export const alphanumericExtendedPattern = "^[a-zA-Z0-9][-:_a-zA-Z0-9]*$";
+export const alphanumericExtendedPattern = "^_?[a-zA-Z0-9][-:_a-zA-Z0-9]*$";
 
 export const validateInstance = (obj: any, sch: Schema): ValidatorResult => {
   const v = new Validator();

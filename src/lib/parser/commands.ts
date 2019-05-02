@@ -1,6 +1,6 @@
 import { MakfyError } from "../errors";
 import { validateInstance } from "../schema";
-import { Commands, commandsSchema } from "../schema/commands";
+import { Commands, commandsSchema, isInternalCommand } from "../schema/commands";
 import { errorMessageForObject } from "../utils/formatting";
 import { isObject } from "../utils/typeChecking";
 import { parseCommand, ParsedCommand } from "./command";
@@ -34,7 +34,7 @@ export const parseCommands = (commands: Commands, skipValidation: boolean): Pars
 
     parseInfo[cmdName] = parseCommand(command, cmdName, true);
 
-    if (!command.internal) {
+    if (!isInternalCommand(cmdName)) {
       publicCommands++;
     }
   });

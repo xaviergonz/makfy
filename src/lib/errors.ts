@@ -1,4 +1,4 @@
-import { ExecContext } from "./execRuntime";
+import { ExecContext } from "./schema/runtime";
 
 export class MakfyError extends Error {
   execContext?: ExecContext;

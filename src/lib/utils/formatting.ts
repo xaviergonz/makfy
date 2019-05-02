@@ -1,6 +1,5 @@
 import chalk from "chalk";
-import { ExecContext } from "../execRuntime";
-import Socket = NodeJS.Socket;
+import { ExecContext } from "../schema/runtime";
 
 export const getTimeString = (show: boolean) => {
   if (!show) {

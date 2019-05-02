@@ -6,69 +6,27 @@ import * as tmp from "tmp";
 import * as yargs from "yargs";
 import { MakfyError, RunError } from "./errors";
 import { ParsedCommand } from "./parser/command";
-import { ParsedCommands } from "./parser/commands";
 import { ArgDefinitions } from "./schema/args";
 import { Command } from "./schema/commands";
-import {
-  ExecCommand,
-  ExecFunction,
-  ExecObject,
-  ExecUtils,
-  GetFileChangesResult,
-  MakfyContext
-} from "./schema/runtime";
+import { ExecCommand, ExecContext, ExecFunction, ExecObject } from "./schema/runtime";
+import { getUtilsContext, setUtilsContext } from "./utils";
 import { blockingConsoleError, blockingConsoleLog, resetColors } from "./utils/console";
 import { formatContextId, formatContextIdStack } from "./utils/formatting";
-import { unrollGlobPatternsAsync } from "./utils/globs";
-import {
-  cacheFolderName,
-  createCacheFolder,
-  generateHashCollectionAsync,
-  getHashCollectionDelta,
-  getHashCollectionFilename,
-  HashCollection,
-  loadHashCollectionFileAsync
-} from "./utils/hash";
 import { OutputBuffer } from "./utils/OutputBuffer";
 import { limitPromiseConcurrency } from "./utils/promise";
-import * as shellescape from "./utils/shellescape";
-import { isStringArray } from "./utils/typeChecking";
+import {
+  escapeForShell,
+  fixPath,
+  getChdirName,
+  getCwdName,
+  getEnvName,
+  getPathDelimiter,
+  getPathEnvName,
+  getShellType
+} from "./utils/shell";
 import Timer = NodeJS.Timer;
 
-type ShellType = shellescape.ShellType;
-
 const prettyHrTime = require("pretty-hrtime");
-
-const getShellType = (): ShellType =>
-  !process.env.SHELL && process.platform === "win32" ? "cmd" : "sh";
-const getPathEnvName = () => (getShellType() === "sh" ? "PATH" : "Path");
-const getPathDelimiter = () => path.delimiter;
-const getCwdName = () => (getShellType() === "sh" ? "pwd" : "cd");
-const getEnvName = () => (getShellType() === "sh" ? "printenv" : "set");
-const getChdirName = () => (getShellType() === "sh" ? "cd" : "cd /d");
-const escapeForShell = (stringOrArray: string | string[]) =>
-  shellescape.escapeShell(getShellType(), stringOrArray);
-const fixPath = (pathname: string) => shellescape.fixPath(getShellType(), pathname);
-
-export interface CachedGetFileChangesResult {
-  result: GetFileChangesResult;
-  oldHashCollection?: HashCollection;
-  newHashCollection: HashCollection;
-}
-
-export interface ExecContext extends MakfyContext {
-  parsedCommands: ParsedCommands;
-  makfyFileContents?: string;
-
-  idStack: string[];
-  cwd?: string;
-  env?: object;
-  syncMode: boolean;
-
-  getFileChangesResults: {
-    [hashFilename: string]: CachedGetFileChangesResult;
-  };
-}
 
 const contextIdColors = ["magenta", "green", "yellow", "red", "blue"];
 
@@ -133,177 +91,17 @@ export const runCommandAsync = async (
 
   const execFunc = createExecFunctionContext(baseContext, baseIdStack, true);
 
-  const utils: ExecUtils = {
-    makfyContext: {
-      commandName: baseContext.commandName,
-      commandArgs: baseContext.commandArgs,
-      commands: baseContext.commands,
-      options: baseContext.options,
-      makfyFilename: baseContext.makfyFilename
-    },
-
-    getFileChangesAsync: async (contextName, globPatterns, options?) => {
-      if (typeof contextName !== "string") {
-        throw new MakfyError(`'contextName' argument must be a string`, baseContext);
-      }
-      if (typeof contextName !== "string" && !isStringArray(globPatterns)) {
-        throw new MakfyError(
-          `'globPatterns' argument must be a string or an array of strings`,
-          baseContext
-        );
-      }
-
-      options = {
-        log: true,
-        ...options
-      };
-      if (contextName === undefined) {
-        contextName = "";
-      }
-
-      const logChangesAsync = async (fileDeltas: GetFileChangesResult) => {
-        if (options!.log) {
-          if (!fileDeltas.hasChanges) {
-            await infoAsync(`[${contextName}] no files changed`);
-          } else {
-            if (fileDeltas.cleanRun) {
-              await infoAsync(
-                `[${contextName}] files changed: clean run - assuming all (${
-                  fileDeltas.added.length
-                } files)`
-              );
-            } else {
-              await infoAsync(
-                `[${contextName}] files changed: ${fileDeltas.unmodified.length} unmodified, ${
-                  fileDeltas.modified.length
-                } modified, ${fileDeltas.removed.length} removed, ${fileDeltas.added.length} added`
-              );
-            }
-          }
-        }
-      };
-
-      // try to get a cached result first
-      const hashFilename = getHashCollectionFilename(
-        baseContext.makfyFileContents || baseContext.makfyFilename,
-        contextName,
-        "sha1"
-      );
-      if (baseContext.getFileChangesResults[hashFilename]) {
-        const cachedResult = baseContext.getFileChangesResults[hashFilename];
-        await logChangesAsync(cachedResult.result);
-        return cachedResult.result;
-      }
-
-      if (typeof globPatterns === "string") {
-        globPatterns = [globPatterns];
-      }
-
-      globPatterns = globPatterns.map((e) => e.trim()).filter((e) => e.length > 0);
-
-      let files: string[] = [];
-      if (globPatterns.length > 0) {
-        // unroll glob patterns
-        files = await unrollGlobPatternsAsync(globPatterns);
-      }
-
-      createCacheFolder();
-
-      let oldHashCollection;
-      //noinspection EmptyCatchBlockJS
-      try {
-        oldHashCollection = await loadHashCollectionFileAsync(hashFilename);
-      } catch (err) {
-        // do nothing
-      }
-
-      const newHashCollection = await generateHashCollectionAsync(files, "sha1", false);
-
-      const delta = getHashCollectionDelta(oldHashCollection, newHashCollection);
-
-      const cached = {
-        result: delta,
-        newHashCollection: newHashCollection,
-        oldHashCollection: oldHashCollection
-      };
-
-      await logChangesAsync(delta);
-
-      baseContext.getFileChangesResults[hashFilename] = cached;
-
-      return delta;
-    },
-
-    cleanCache() {
-      const deleteFolderRecursive = (dir: string) => {
-        if (!fs.existsSync(dir)) {
-          return;
-        }
-
-        fs.readdirSync(dir).forEach((file) => {
-          const curPath = path.join(dir, file);
-          if (fs.lstatSync(curPath).isDirectory()) {
-            // recurse
-            deleteFolderRecursive(curPath);
-          } else {
-            // delete file
-            fs.unlinkSync(curPath);
-          }
-        });
-        fs.rmdirSync(dir);
-      };
-
-      const cf = path.join(".", cacheFolderName);
-      deleteFolderRecursive(cf);
-    },
-
-    escape(...parts) {
-      return escapeForShell([...parts]);
-    },
-
-    fixPath(pathname, style = "autodetect") {
-      let sh: ShellType;
-      switch (style) {
-        case undefined:
-        case "autodetect":
-          sh = getShellType();
-          break;
-        case "windows":
-          sh = "cmd";
-          break;
-        case "posix":
-          sh = "sh";
-          break;
-        default:
-          throw new MakfyError(`invalid fixPath style - '${style}'`, baseContext);
-      }
-      return shellescape.fixPath(sh, pathname);
-    },
-
-    setEnvVar(name, value) {
-      const shell = getShellType();
-      switch (shell) {
-        case "sh":
-          if (value === undefined) {
-            return `unset ${name}`;
-          } else {
-            return `export ${name}=${escapeForShell(value)}`;
-          }
-        case "cmd":
-          return `set ${name}=${value === undefined ? "" : value}`;
-        default:
-          throw new MakfyError(`unknown shell type - '${shell}'`, baseContext);
-      }
-    },
-
-    async expandGlobsAsync(globPatterns) {
-      return unrollGlobPatternsAsync(globPatterns);
-    },
-
-    limitPromiseConcurrency: limitPromiseConcurrency
-  };
-
-  await command.run(execFunc, finalCommandArgs, utils);
+  const oldUtilsContext = getUtilsContext();
+  setUtilsContext({
+    baseContext,
+    warnAsync,
+    infoAsync
+  });
+  try {
+    await command.run(execFunc, finalCommandArgs);
+  } finally {
+    setUtilsContext(oldUtilsContext);
+  }
 };
 
 const createExecFunctionContext = (

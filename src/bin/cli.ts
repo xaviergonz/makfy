@@ -6,15 +6,14 @@ import * as path from "path";
 import stripColor from "strip-ansi";
 import * as tsNode from "ts-node";
 import * as yargs from "yargs";
-import { listAllCommands, listCommand, MakfyConfig, runCommandAsync } from "../lib/";
+import { listAllCommands, listCommand, runCommandAsync } from "../lib/";
+import { config } from "../lib/config";
 import { MakfyError, RunError } from "../lib/errors";
 import { alphanumericExtendedPattern } from "../lib/schema";
 import { reservedArgNames } from "../lib/schema/args";
-import { Commands } from "../lib/schema/commands";
-import { PartialOptions } from "../lib/schema/options";
 import { resetColors } from "../lib/utils/console";
-import { errorMessageForObject, formatContextId } from "../lib/utils/formatting";
-import { isObject, isStringArray } from "../lib/utils/typeChecking";
+import { formatContextId } from "../lib/utils/formatting";
+import { isStringArray } from "../lib/utils/typeChecking";
 
 yargs.parserConfiguration({
   "short-option-groups": false,
@@ -131,10 +130,6 @@ const getFileToLoad = (): FileToLoad => {
 };
 
 interface LoadFileResult {
-  exports: {
-    commands: Commands;
-    options?: PartialOptions;
-  };
   contents?: string;
 }
 
@@ -143,58 +138,41 @@ const loadFile = (fileToLoad: FileToLoad, loadContents: boolean): LoadFileResult
 
   // try to load the user file
   try {
-    let usingDefaultExport = false;
-    let fileExports: MakfyConfig = require(absoluteFilename);
+    require(absoluteFilename);
 
-    // use default export if available
-    if ((fileExports as any).default) {
-      usingDefaultExport = true;
-      fileExports = (fileExports as any).default;
+    if (!loadContents) {
+      return {};
     }
 
-    if (!isObject(fileExports)) {
-      exitWithError(
-        ErrCode.UserFileError,
-        `module.exports${
-          usingDefaultExport ? ".default" : ""
-        } inside '${filename}' is not an object`
-      );
-      return;
-    }
+    let contents = fs.readFileSync(absoluteFilename, "utf8");
+    const deps = config.dependencies;
+    if (deps) {
+      if (!isStringArray(deps)) {
+        exitWithError(
+          ErrCode.UserFileError,
+          `export dependencies must be a string array with paths to files`
+        );
+      }
 
-    let contents;
-    if (loadContents) {
-      contents = fs.readFileSync(absoluteFilename, "utf8");
-      const deps = fileExports.dependencies;
-      if (deps) {
-        if (!isStringArray(deps)) {
-          exitWithError(
-            ErrCode.UserFileError,
-            `export dependencies must be a string array with paths to files`
-          );
+      const rootDir = path.dirname(absoluteFilename);
+      for (const dep of deps) {
+        let absDepFilename;
+        if (path.isAbsolute(dep)) {
+          absDepFilename = dep;
+        } else {
+          absDepFilename = path.join(rootDir, dep);
         }
 
-        const rootDir = path.dirname(absoluteFilename);
-        for (const dep of deps) {
-          let absDepFilename;
-          if (path.isAbsolute(dep)) {
-            absDepFilename = dep;
-          } else {
-            absDepFilename = path.join(rootDir, dep);
-          }
-
-          if (!fs.existsSync(absDepFilename) && !absDepFilename.toLowerCase().endsWith(".js")) {
-            absDepFilename += ".js";
-          }
-
-          contents += fs.readFileSync(absDepFilename, "utf8");
+        if (!fs.existsSync(absDepFilename) && !absDepFilename.toLowerCase().endsWith(".js")) {
+          absDepFilename += ".js";
         }
+
+        contents += fs.readFileSync(absDepFilename, "utf8");
       }
     }
 
     return {
-      exports: fileExports,
-      contents: contents
+      contents
     };
   } catch (err) {
     exitWithError(ErrCode.UserFileError, `error requiring ${filename}:\n${err.stack.toString()}`);
@@ -216,7 +194,8 @@ const mainAsync = async () => {
   if (argv.list || argv.l || argv._.length <= 0) {
     // list
     const fileToLoad = getFileToLoad();
-    const { exports } = loadFile(fileToLoad, false)!;
+    // tslint:disable-next-line: no-unused-expression
+    loadFile(fileToLoad, false)!;
 
     const commandName = argv._.length > 0 ? argv._[0].trim() : undefined;
     if (commandName) {
@@ -231,13 +210,13 @@ const mainAsync = async () => {
       execute = async () => {
         const output =
           chalk.bold.gray(`listing '${commandName}' command...\n\n`) +
-          listCommand(exports.commands, commandName, true);
+          listCommand(config.commands, commandName, true);
         console.log(output);
       };
     } else {
       execute = async () => {
         const output =
-          chalk.bold.gray("listing all commands...\n\n") + listAllCommands(exports.commands, true);
+          chalk.bold.gray("listing all commands...\n\n") + listAllCommands(config.commands, true);
         console.log(output);
       };
     }
@@ -249,7 +228,7 @@ const mainAsync = async () => {
     }
 
     const fileToLoad = getFileToLoad();
-    const { exports, contents } = loadFile(fileToLoad, true)!;
+    const { contents } = loadFile(fileToLoad, true)!;
 
     const commandName = argv._[0].trim();
 
@@ -269,17 +248,7 @@ const mainAsync = async () => {
       }
     }
 
-    let options = exports.options;
-    if (options === undefined) {
-      options = {};
-    }
-    if (!isObject(options)) {
-      exitWithError(
-        ErrCode.UserFileError,
-        errorMessageForObject(["options"], `must be an object or undefined`)
-      );
-      return;
-    }
+    const options = config.options;
     if (argv.profile) {
       options.profile = true;
     }
@@ -291,7 +260,7 @@ const mainAsync = async () => {
       await runCommandAsync({
         makfyFilename: fileToLoad.filename,
         makfyFileContents: contents,
-        commands: exports.commands,
+        commands: config.commands,
         commandName: commandName,
         commandArgs: commandArgs,
         options: options

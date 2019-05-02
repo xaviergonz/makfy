@@ -1,5 +1,9 @@
 # makfy changelog
 
+## 2.0.0
+
+- whole new syntax to define commands more easily. see README.md for further details.
+
 ## 1.4.0
 
 - added run() as short syntax for argument-less / help-less commands. see README.md for further details.

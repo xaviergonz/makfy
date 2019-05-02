@@ -1,6 +1,6 @@
 {
   "name": "makfy",
-  "version": "1.4.2",
+  "version": "2.0.0",
   "description": "makfy - npm scripts on steroids!",
   "main": "dist/lib/index.js",
   "typings": "dist/lib/index.d.ts",
@@ -8,9 +8,8 @@
     "makfy": "dist/bin/cli.js"
   },
   "scripts": {
-    "build": "tsc -p .",
-    "clean": "rimraf ./dist",
-    "prepublishOnly": "yarn clean && yarn build"
+    "build": "rimraf ./dist && tsc -p .",
+    "prepublishOnly": "yarn build"
   },
   "files": [
     "dist"

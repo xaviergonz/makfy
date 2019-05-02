@@ -1,13 +1,14 @@
 import chalk, { Level } from "chalk";
 import stripColor from "strip-ansi";
+import { config } from "./config";
 import { MakfyError, RunError } from "./errors";
 import * as execRuntime from "./execRuntime";
 import { ParsedArgDefinition } from "./parser/commandArg";
 import { parseCommands } from "./parser/commands";
 import { parseOptions } from "./parser/options";
-import { command, Command, CommandFromFunction, Commands } from "./schema/commands";
+import { cmd, Commands, isInternalCommand } from "./schema/commands";
 import { FullOptions, PartialOptions } from "./schema/options";
-import { ExecCommand, ExecFunction } from "./schema/runtime";
+import { ExecContext } from "./schema/runtime";
 import { resetColors } from "./utils/console";
 import { errorMessageForObject, getTimeString } from "./utils/formatting";
 import { saveHashCollectionFileAsync } from "./utils/hash";
@@ -15,20 +16,10 @@ import { TextWriter } from "./utils/TextWriter";
 import { isObject } from "./utils/typeChecking";
 
 const prettyHrTime = require("pretty-hrtime");
-type ExecContext = execRuntime.ExecContext;
 
-export { command };
-
-export interface MakfyConfig {
-  commands: Commands;
-  dependencies?: string[];
-  options?: PartialOptions;
-}
-
-// only used for TS typing
-export function makfyConfig(makfyConfigData: MakfyConfig): MakfyConfig {
-  return makfyConfigData;
-}
+export * from "./simpleArgs";
+export * from "./utils";
+export { cmd };
 
 export interface RunCommandOptions {
   commands: Commands;
@@ -62,7 +53,7 @@ export const runCommandAsync = async (runCommandOptions: RunCommandOptions) => {
     throw new MakfyError(`command '${commandName}' not found`, undefined);
   }
 
-  if (currentCommand.internal) {
+  if (isInternalCommand(commandName)) {
     throw new MakfyError("internal commands cannot be run directly", undefined);
   }
 
@@ -215,20 +206,17 @@ export const listAllCommands = (commands: Commands, listArguments = true, listIn
   let output = "";
 
   for (const commandName of Object.keys(commands)) {
-    const currentCommand = commands[commandName];
-    if (!currentCommand.internal || listInternal) {
+    if (!isInternalCommand(commandName) || listInternal) {
       output += listCommand(commands, commandName, listArguments);
     }
   }
   return output;
 };
 
-// short syntax
-export function run(...inlineCommands: ExecCommand[]): Command<{}> & CommandFromFunction {
-  const cmd: Command<{}> = {
-    run: async (exec: ExecFunction) => {
-      await exec(...inlineCommands);
-    }
-  };
-  return cmd as Command<{}> & CommandFromFunction;
+export function setOptions(opts: PartialOptions) {
+  Object.assign(config.options, opts);
+}
+
+export function setDependencies(deps: string[] | undefined) {
+  config.dependencies = deps;
 }

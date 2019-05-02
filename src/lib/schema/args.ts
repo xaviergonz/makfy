@@ -117,8 +117,10 @@ export type ArgDefinition = FlagArgDefinition | StringArgDefinition | EnumArgDef
 export type ArgInstance<T extends ArgDefinition> = T extends FlagArgDefinition
   ? boolean
   : T extends StringArgDefinition
-    ? string
-    : T extends EnumArgDefinition ? string : string | boolean;
+  ? string
+  : T extends EnumArgDefinition
+  ? string
+  : string | boolean;
 
 export const argSchema: Schema = {
   id: "/arg",

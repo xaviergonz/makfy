@@ -1,3 +1,5 @@
+import { ParsedCommands } from "../parser/commands";
+import { HashCollection } from "../utils/hash";
 import { Commands } from "./commands";
 import { FullOptions } from "./options";
 
@@ -12,12 +14,16 @@ export type ExecCommand = string | ExecObject | (string | ExecObject)[];
 
 export type ExecFunction = (...commands: ExecCommand[]) => Promise<{ keepContext: ExecFunction }>;
 
-export interface GetFileChangesOptions {
-  log: boolean;
-}
-
 export interface ExtendedFullOptions extends FullOptions {
   colorMode: boolean;
+}
+
+export interface MakfyContext {
+  commandName: string;
+  commandArgs: object;
+  commands: Commands;
+  options: ExtendedFullOptions;
+  makfyFilename: string;
 }
 
 export interface GetFileChangesResult {
@@ -29,27 +35,22 @@ export interface GetFileChangesResult {
   unmodified: string[];
 }
 
-export interface MakfyContext {
-  commandName: string;
-  commandArgs: object;
-  commands: Commands;
-  options: ExtendedFullOptions;
-  makfyFilename: string;
+export interface CachedGetFileChangesResult {
+  result: GetFileChangesResult;
+  oldHashCollection?: HashCollection;
+  newHashCollection: HashCollection;
 }
 
-export interface ExecUtils {
-  makfyContext: MakfyContext;
-  escape(...parts: string[]): string;
-  fixPath(path: string, style: "autodetect" | "windows" | "posix"): string;
-  setEnvVar(name: string, value: string | undefined): string;
-  expandGlobsAsync(globPatterns: string[]): Promise<string[]>;
-  getFileChangesAsync(
-    contextName: string,
-    globPatterns: string[] | string,
-    options?: Partial<GetFileChangesOptions>
-  ): Promise<GetFileChangesResult>;
-  cleanCache(): void;
+export interface ExecContext extends MakfyContext {
+  parsedCommands: ParsedCommands;
+  makfyFileContents?: string;
 
-  // internal only for now
-  limitPromiseConcurrency<T>(concurrency: number): (fn: () => PromiseLike<T>) => Promise<T>;
+  idStack: string[];
+  cwd?: string;
+  env?: object;
+  syncMode: boolean;
+
+  getFileChangesResults: {
+    [hashFilename: string]: CachedGetFileChangesResult;
+  };
 }
