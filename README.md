@@ -5,8 +5,13 @@
 
 [![npm version](https://badge.fury.io/js/makfy.svg)](https://badge.fury.io/js/makfy)
 
-Install it globally `npm install -g makfy`  
-or locally `npm install --save-dev makfy`
+Install it globally
+
+`npm install -g makfy` / `yarn add global makfy`  
+
+or locally
+
+`npm install --save-dev makfy` / `yarn add --dev makfy`
 
 **To support this project star it on [github](https://github.com/xaviergonz/makfy)!**
 
