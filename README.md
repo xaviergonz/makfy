@@ -7,7 +7,7 @@
 
 Install it globally
 
-`npm install -g makfy` / `yarn add global makfy`  
+`npm install -g makfy` / `yarn global add makfy`  
 
 or locally
 
