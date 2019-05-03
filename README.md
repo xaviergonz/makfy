@@ -95,7 +95,10 @@ cmd("clean")
     dev: "dev clean"
   })
   .run(async (exec, {prod, dev}) => {
-    await exec(prod ? "rimraf ./dist-prod" : null, dev ? "rimraf ./dist-dev" : null);
+    await exec(
+      prod ? "rimraf ./dist-prod" : null,
+      dev ? "rimraf ./dist-dev" : null
+    );
   });
 ```
 
