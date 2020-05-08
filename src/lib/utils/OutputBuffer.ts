@@ -1,4 +1,3 @@
-import Socket = NodeJS.Socket;
 import chalk from "chalk";
 import stripColor from "strip-ansi";
 import { socketFlushWriteAsync } from "./sockets";
@@ -10,7 +9,7 @@ export interface OutputBufferData {
 
 export interface OutputBufferSocketConfig {
   [id: string]: {
-    socket: Socket;
+    socket: NodeJS.WriteStream;
     color?: string;
   };
 }
@@ -33,7 +32,7 @@ export class OutputBuffer {
     if (stripColor(str).length > 0) {
       this._output.push({
         type: type,
-        data: Buffer.from(str, "utf8")
+        data: Buffer.from(str, "utf8"),
       });
     }
   }

@@ -1,5 +1,9 @@
 # makfy changelog
 
+## 2.0.1
+
+- fixed an issue of commands not being detected when there was both a local and global installation of makfy and the global one was run.
+
 ## 2.0.0
 
 - whole new syntax to define commands more easily. see README.md for further details.

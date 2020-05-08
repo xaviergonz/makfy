@@ -1,4 +1,4 @@
-import chalk, { Level } from "chalk";
+import chalk from "chalk";
 import stripColor from "strip-ansi";
 import { config } from "./config";
 import { MakfyError, RunError } from "./errors";
@@ -37,7 +37,7 @@ export const runCommandAsync = async (runCommandOptions: RunCommandOptions) => {
     commandArgs,
     options,
     makfyFilename,
-    makfyFileContents
+    makfyFileContents,
   } = runCommandOptions;
 
   if (!commandName) {
@@ -73,7 +73,7 @@ export const runCommandAsync = async (runCommandOptions: RunCommandOptions) => {
     commands: commands,
     options: {
       ...parsedOptions,
-      colorMode: chalk.supportsColor.level !== Level.None
+      colorMode: chalk.supportsColor !== false && chalk.supportsColor.hasBasic,
     },
     makfyFilename: makfyFilename,
 
@@ -82,7 +82,7 @@ export const runCommandAsync = async (runCommandOptions: RunCommandOptions) => {
     makfyFileContents: makfyFileContents,
     syncMode: true,
     idStack: [],
-    getFileChangesResults: getFileChangesResults
+    getFileChangesResults: getFileChangesResults,
   };
 
   try {

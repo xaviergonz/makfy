@@ -22,7 +22,7 @@ export const unrollGlobPatternsAsync = async (globPatterns: string[]): Promise<s
     throw new Error("glob patterns must be a string array");
   }
 
-  const set = new Set();
+  const set = new Set<string>();
   for (let globPattern of globPatterns) {
     if (typeof globPattern !== "string") {
       throw new Error("a glob pattern must be a string");

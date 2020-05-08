@@ -23,14 +23,14 @@ export const commandSchema: Schema = {
   required: ["run"],
   properties: {
     desc: {
-      type: "string"
+      type: "string",
     },
     args: argsSchema,
     run: {
-      isFunction: true
-    } as Schema
+      isFunction: true,
+    } as Schema,
   },
-  additionalProperties: false
+  additionalProperties: false,
 };
 
 export interface Commands {
@@ -41,9 +41,9 @@ export const commandsSchema: Schema = {
   id: "/commands",
   type: "object",
   patternProperties: {
-    [alphanumericExtendedPattern]: commandSchema
+    [alphanumericExtendedPattern]: commandSchema,
   },
-  additionalProperties: false
+  additionalProperties: false,
 };
 
 export function isInternalCommand(commandName: string) {
@@ -68,7 +68,7 @@ export class CommandBuilder<TArgDefs extends ArgDefinitions> {
   argsDesc(argDescs: { [k in keyof TArgDefs]?: string }): this {
     this._command.args = this._command.args || ({} as any);
 
-    Object.keys(argDescs).forEach((argName) => {
+    Object.keys(argDescs).forEach((argName: keyof TArgDefs) => {
       const desc = argDescs[argName];
 
       const argObj = (this._command.args![argName] = this._command.args![argName] || {});
@@ -97,7 +97,7 @@ export class CommandBuilder<TArgDefs extends ArgDefinitions> {
 
     config.commands[this.name] = {
       ...this._command,
-      run: runFn
+      run: runFn,
     };
   }
 }
