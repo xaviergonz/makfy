@@ -23,6 +23,7 @@ export const reservedArgNames = [
 export interface ArgDefinition {
   type: string;
   desc?: string;
+  byDefault?: any;
 }
 
 // an optional flag, false by default
@@ -123,7 +124,7 @@ export type ArgInstance<T extends ArgDefinition> = T extends FlagArgDefinition
   ? string
   : T extends EnumArgDefinition<infer V>
   ? V
-  : never;
+  : string | boolean;
 
 export const argSchema: Schema = {
   id: "/arg",
