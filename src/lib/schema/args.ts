@@ -75,10 +75,10 @@ export const stringArgSchema: Schema = {
 
 // an enum, required if not default value is given
 // the default value must be inside the enum given in values; values must contain at least one element
-export interface EnumArgDefinition {
+export interface EnumArgDefinition<V extends string> {
   type: "enum" | "e";
-  values: string[];
-  byDefault?: string;
+  values: V[];
+  byDefault?: V;
   desc?: string;
 }
 
@@ -112,14 +112,15 @@ export const enumArgSchema: Schema = {
   additionalProperties: false
 };
 
+// @ts-ignore Ignore missing type argument. Passing it would break the feature
 export type ArgDefinition = FlagArgDefinition | StringArgDefinition | EnumArgDefinition;
 
 export type ArgInstance<T extends ArgDefinition> = T extends FlagArgDefinition
   ? boolean
   : T extends StringArgDefinition
   ? string
-  : T extends EnumArgDefinition
-  ? string
+  : T extends EnumArgDefinition<infer V>
+  ? V
   : string | boolean;
 
 export const argSchema: Schema = {

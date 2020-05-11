@@ -111,7 +111,7 @@ export const parseArgDefinition = (
       return value;
     };
   } else if (normalizedType === Type.Enum) {
-    const { byDefault, values } = argDefinition as EnumArgDefinition;
+    const { byDefault, values } = argDefinition as EnumArgDefinition<string>;
     required = byDefault === undefined;
 
     parse = (value: any) => {
@@ -184,7 +184,7 @@ const getHelpForArg = (argName: string, argDefinition: ArgDefinition) => {
     case Type.String:
       return getHelp("string", byDefault);
     case Type.Enum:
-      const { values } = argDefinition as EnumArgDefinition;
+      const { values } = argDefinition as EnumArgDefinition<string>;
       return getHelp(values.join("|"), byDefault);
     default:
       throw new Error(`internal error - unknown type: ${normalizedType}`);
