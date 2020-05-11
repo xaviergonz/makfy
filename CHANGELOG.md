@@ -1,5 +1,9 @@
 # makfy changelog
 
+## 2.0.2
+
+- improved TypeScript support for enum arguments (thanks to SanderRonde).
+
 ## 2.0.1
 
 - fixed an issue of commands not being detected when there was both a local and global installation of makfy and the global one was run.

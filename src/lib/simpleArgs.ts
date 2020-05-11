@@ -13,7 +13,10 @@ export function str(byDefault?: string): StringArgDefinition {
   };
 }
 
-export function choice(values: string[], byDefault?: string): EnumArgDefinition {
+export function choice<V extends string = string>(
+  values: V[],
+  byDefault?: V
+): EnumArgDefinition<V> {
   return {
     type: "enum",
     values,

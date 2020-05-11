@@ -20,8 +20,14 @@ export const reservedArgNames = [
   "show-time"
 ];
 
+export interface ArgDefinition {
+  type: string;
+  desc?: string;
+  byDefault?: any;
+}
+
 // an optional flag, false by default
-export interface FlagArgDefinition {
+export interface FlagArgDefinition extends ArgDefinition {
   type: "flag" | "f";
   byDefault?: false;
   desc?: string;
@@ -48,7 +54,7 @@ export const flagArgSchema: Schema = {
 };
 
 // any string, required if no default value is given
-export interface StringArgDefinition {
+export interface StringArgDefinition extends ArgDefinition {
   type: "string" | "s";
   byDefault?: string;
   desc?: string;
@@ -75,10 +81,10 @@ export const stringArgSchema: Schema = {
 
 // an enum, required if not default value is given
 // the default value must be inside the enum given in values; values must contain at least one element
-export interface EnumArgDefinition {
+export interface EnumArgDefinition<V extends string> extends ArgDefinition {
   type: "enum" | "e";
-  values: string[];
-  byDefault?: string;
+  values: V[];
+  byDefault?: V;
   desc?: string;
 }
 
@@ -112,14 +118,12 @@ export const enumArgSchema: Schema = {
   additionalProperties: false
 };
 
-export type ArgDefinition = FlagArgDefinition | StringArgDefinition | EnumArgDefinition;
-
 export type ArgInstance<T extends ArgDefinition> = T extends FlagArgDefinition
   ? boolean
   : T extends StringArgDefinition
   ? string
-  : T extends EnumArgDefinition
-  ? string
+  : T extends EnumArgDefinition<infer V>
+  ? V
   : string | boolean;
 
 export const argSchema: Schema = {
@@ -142,5 +146,5 @@ export interface ArgDefinitions {
 }
 
 export type ArgsInstance<TArgDefs extends ArgDefinitions> = {
-  [k in keyof TArgDefs]: ArgInstance<TArgDefs[k]>
+  [k in keyof TArgDefs]: ArgInstance<TArgDefs[k]>;
 };

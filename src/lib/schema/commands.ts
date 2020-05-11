@@ -3,7 +3,7 @@
 import { Schema } from "jsonschema";
 import { config } from "../config";
 import { alphanumericExtendedPattern } from "./";
-import { ArgDefinitions, ArgsInstance, argsSchema } from "./args";
+import { ArgDefinitions, ArgsInstance, argsSchema, ArgDefinition } from "./args";
 import { ExecCommand, ExecFunction } from "./runtime";
 
 export type CommandRunFn<TArgDefs extends ArgDefinitions> = (
@@ -71,7 +71,8 @@ export class CommandBuilder<TArgDefs extends ArgDefinitions> {
     Object.keys(argDescs).forEach((argName: keyof TArgDefs) => {
       const desc = argDescs[argName];
 
-      const argObj = (this._command.args![argName] = this._command.args![argName] || {});
+      const argObj = (this._command.args![argName] =
+        this._command.args![argName] || ({} as ArgDefinition));
       Object.assign(argObj, { desc });
     });
 
