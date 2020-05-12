@@ -140,7 +140,7 @@ export const parseArgDefinition = (
   };
 };
 
-const getHelpForArg = (argName: string, argDefinition: ArgDefinition) => {
+const getHelpForArg = (argName: string, argDefinition: ArgDefinition & { byDefault?: any }) => {
   const { byDefault, desc } = argDefinition;
   const normalizedType = normalizeType(argDefinition.type);
 

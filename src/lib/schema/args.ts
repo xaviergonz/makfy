@@ -23,7 +23,6 @@ export const reservedArgNames = [
 export interface ArgDefinition {
   type: string;
   desc?: string;
-  byDefault?: any;
 }
 
 // an optional flag, false by default

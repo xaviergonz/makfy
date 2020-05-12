@@ -1,6 +1,6 @@
 # makfy changelog
 
-## 2.0.2
+## 2.0.3
 
 - improved TypeScript support for enum arguments (thanks to SanderRonde).
 
