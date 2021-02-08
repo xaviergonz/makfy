@@ -382,7 +382,7 @@ const execCommandStringAsync = async (
       shellArgs = [];
     } else {
       useShell = false;
-      shellCommand = process.env.SHELL! || "sh";
+      shellCommand = process.env.SHELL || "sh";
       shellArgs = ["-c", finalCommand];
     }
 
