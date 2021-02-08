@@ -1,5 +1,9 @@
 # makfy changelog
 
+## 2.0.4
+
+- fixed an issue when running under Github actions environments (thanks to SanderRonde).
+
 ## 2.0.3
 
 - improved TypeScript support for enum arguments (thanks to SanderRonde).

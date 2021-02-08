@@ -173,7 +173,7 @@ export const mainAsync = async (argv: yargs.Argv["argv"]) => {
     // tslint:disable-next-line: no-unused-expression
     loadFile(fileToLoad, false)!;
 
-    const commandName = argv._.length > 0 ? argv._[0].trim() : undefined;
+    const commandName = argv._.length > 0 ? trimArg(argv._[0]) : undefined;
     if (commandName) {
       if (argv._.length > 1) {
         exitWithError(
@@ -206,10 +206,10 @@ export const mainAsync = async (argv: yargs.Argv["argv"]) => {
     const fileToLoad = getFileToLoad(argv);
     const { contents } = loadFile(fileToLoad, true)!;
 
-    const commandName = argv._[0].trim();
+    const commandName = trimArg(argv._[0]);
 
     // remove reserved args
-    const commandArgs = { ...argv };
+    const commandArgs: {[x: string]: unknown;} = { ...argv };
     delete commandArgs._;
     delete commandArgs.$0;
 
@@ -261,3 +261,7 @@ export const mainAsync = async (argv: yargs.Argv["argv"]) => {
     resetColors();
   }
 };
+
+function trimArg(arg: string | number): string {
+  return ("" + arg).trim();
+}

@@ -217,15 +217,16 @@ const execCSubcmmandStringAsync = async (command: string, context: ExecContext) 
     );
   }
 
-  const cmdName = parsed._[0];
-  delete parsed._;
-  delete parsed.$0;
+  const cmdName = "" + parsed._[0];
+  const parsedWithoutExtras: { [x: string]: unknown;} = parsed;
+  delete parsedWithoutExtras._;
+  delete parsedWithoutExtras.$0;
 
   await execObjectAsync(
     {
       _: cmdName,
       args: {
-        ...(parsed as any)
+        ...(parsedWithoutExtras as any)
       }
     },
     context
@@ -357,7 +358,7 @@ const execCommandStringAsync = async (
     finalCommand = `${getChdirName()} ${escapeForShell(fixPath(context.cwd))} && ${finalCommand}`;
   }
 
-  return new Promise((resolve, reject) => {
+  return new Promise<void>((resolve, reject) => {
     const outputBuffer = new OutputBuffer(formatContextId(context), {
       out: {
         socket: process.stdout
@@ -381,7 +382,7 @@ const execCommandStringAsync = async (
       shellArgs = [];
     } else {
       useShell = false;
-      shellCommand = process.env.SHELL!;
+      shellCommand = process.env.SHELL! || "sh";
       shellArgs = ["-c", finalCommand];
     }
 

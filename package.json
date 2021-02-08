@@ -1,6 +1,6 @@
 {
   "name": "makfy",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "description": "makfy - npm scripts on steroids!",
   "main": "dist/lib/index.js",
   "typings": "dist/lib/index.d.ts",
@@ -33,9 +33,9 @@
   },
   "homepage": "https://github.com/xaviergonz/makfy#readme",
   "devDependencies": {
-    "@types/node": "^13.13.5",
+    "@types/node": "^14.14.25",
     "@types/tmp": "0.2.0",
-    "@types/yargs": "^15.0.4",
+    "@types/yargs": "^16.0.0",
     "prettier": "^2.0.5",
     "rimraf": "^3.0.2",
     "tslint": "^6.1.2",
@@ -48,8 +48,8 @@
     "pretty-hrtime": "^1.0.3",
     "strip-ansi": "^6.0.0",
     "tmp": "^0.2.1",
-    "ts-node": "^8.0.3",
-    "typescript": "^3.4.3",
-    "yargs": "^15.3.1"
+    "ts-node": "^9.1.1",
+    "typescript": "^4.1.3",
+    "yargs": "^16.2.0"
   }
 }

@@ -1,5 +1,5 @@
 export const socketFlushWriteAsync = async (socket: NodeJS.WriteStream, str: string) => {
-  await new Promise((resolve) => {
+  await new Promise<void>((resolve) => {
     const flushed = socket.write(str);
     if (flushed) {
       resolve();
