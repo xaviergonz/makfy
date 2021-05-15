@@ -127,7 +127,18 @@ const createExecFunctionContext = (
 
 const createExecFunction = (context: ExecContext): ExecFunction => {
   const innerExec = async (...commands: ExecCommand[]) => {
-    for (let command of commands) {
+    // expand string commands that use \n
+    const expandedCommands = [];
+    for (const command of commands) {
+      if (typeof command === "string") {
+        const expandedCommand = command.split("\n");
+        expandedCommands.push(...expandedCommand);
+      } else {
+        expandedCommands.push(command);
+      }
+    }
+
+    for (let command of expandedCommands) {
       if (command === null || command === undefined) {
         // skip
       } else if (Array.isArray(command)) {
@@ -136,10 +147,10 @@ const createExecFunction = (context: ExecContext): ExecFunction => {
         await execObjectAsync(command as ExecObject, context);
       } else if (typeof command === "string") {
         command = command.trim();
-        if (command === "") {
+        if (command === "" || command.startsWith("//")) {
           // skip
         } else if (command.startsWith("@")) {
-          await execCSubcmmandStringAsync(command, context);
+          await execSubcommandStringAsync(command, context);
         } else if (command.startsWith("?")) {
           await execHelpStringAsync(command, context);
         }
@@ -199,7 +210,7 @@ const execArrayAsync = async (
   }
 };
 
-const execCSubcmmandStringAsync = async (command: string, context: ExecContext) => {
+const execSubcommandStringAsync = async (command: string, context: ExecContext) => {
   // strip @ at the beginning
   command = command.substr(1).trim();
   const parsed = yargs.parse(command);
@@ -218,7 +229,7 @@ const execCSubcmmandStringAsync = async (command: string, context: ExecContext) 
   }
 
   const cmdName = "" + parsed._[0];
-  const parsedWithoutExtras: { [x: string]: unknown;} = parsed;
+  const parsedWithoutExtras: { [x: string]: unknown } = parsed;
   delete parsedWithoutExtras._;
   delete parsedWithoutExtras.$0;
 

@@ -1,5 +1,9 @@
 # makfy changelog
 
+## 2.1.0
+
+- Added support for multiline template literals as well as comment commands (commands starting with "//").
+
 ## 2.0.4
 
 - fixed an issue when running under Github actions environments (thanks to SanderRonde).
